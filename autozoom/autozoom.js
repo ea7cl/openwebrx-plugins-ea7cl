@@ -4,13 +4,13 @@
  * Botón AZ (junto a LST):
  * - clic: activa o desactiva el autozoom. Por defecto está desactivado y cada
  *   navegador recuerda su elección.
- * - clic derecho (o mantener pulsado en el móvil): elegir cuánto zoom hacer,
- *   de 5 % (mínimo) a 50 % (máximo).
+ * - clic derecho (o mantener pulsado en el móvil): elegir cuánto zoom hacer:
+ *   5 % (mínimo) = la banda entera; 10, 25 y 50 % (máximo) = el doble de zoom
+ *   cada vez, con la frecuencia en el centro aunque la vista se salga de la banda.
+ *   Si la banda ocupa todo o casi todo el perfil, el 5 % es la mitad del perfil.
  *
  * Con el autozoom activado:
- * - 3 s después de sintonizar una frecuencia hace zoom a la banda que la contiene.
- *   Si la banda ocupa todo o casi todo el perfil, hace el zoom elegido alrededor
- *   de la frecuencia, sin salirse de la banda.
+ * - 3 s después de sintonizar una frecuencia hace el zoom elegido.
  * - Al tocar el waterfall/escala (clic, rueda o toque) vuelve a la vista completa.
  *   Ese toque solo abre el rango. Si en 3 s no se elige otra frecuencia, vuelve el zoom.
  */
@@ -19,8 +19,9 @@ Plugins.autozoom.no_css = true;
 
 Plugins.autozoom.DELAY_MS = 3000;          // espera antes de hacer zoom
 Plugins.autozoom.MARGIN = 0.05;            // 5 % de margen a cada lado de la banda
-// opciones del menú: % de zoom -> % del perfil que queda a la vista (más zoom = se ve menos)
-Plugins.autozoom.ZOOMS = { 5: 50, 10: 25, 25: 10, 50: 5 };
+// opciones del menú: % de zoom -> cuántas veces se divide la vista base
+// (5 % = banda entera; cada opción siguiente, el doble de zoom)
+Plugins.autozoom.ZOOMS = { 5: 1, 10: 2, 25: 4, 50: 8 };
 Plugins.autozoom.DEFAULT_ZOOM = 25;
 
 // Bandas en Hz: [nombre, inicio, fin]. IARU Región 1 + radiodifusión. Edítalas a tu gusto.
@@ -131,8 +132,6 @@ Plugins.autozoom.init = function () {
         // recortar la banda a lo que cubre el perfil
         var lo = Math.max(band[1], center_freq - bandwidth / 2);
         var hi = Math.min(band[2], center_freq + bandwidth / 2);
-        var span = (hi - lo) * (1 + 2 * self.MARGIN);
-        var center = (lo + hi) / 2;
 
         // el mayor nivel de zoom cuya anchura visible todavía cubre ese ancho
         function levelFor(s) {
@@ -143,18 +142,20 @@ Plugins.autozoom.init = function () {
             return level;
         }
 
-        var level = levelFor(span);
+        // vista base: la banda entera con su margen; si la banda ocupa todo o casi
+        // todo el perfil (no hay zoom que la encuadre), la mitad del perfil
+        var base = (hi - lo) * (1 + 2 * self.MARGIN);
+        var bandFits = levelFor(base) > 0;
+        if (!bandFits) base = bandwidth / 2;
 
-        // la banda ocupa todo o casi todo el perfil: el zoom elegido alrededor de la
-        // frecuencia, desplazado si hace falta para no salirse de la banda
-        if (level === 0) {
-            span = Math.min(bandwidth * self.ZOOMS[zoom] / 100, hi - lo);
-            level = levelFor(span);
-            // los niveles de zoom son fijos: ajustar con el ancho que de verdad se verá
-            var shown = Math.min(bandwidth / zoom_levels[level], hi - lo);
-            center = Math.min(Math.max(f, lo + shown / 2), hi - shown / 2);
-        }
+        // cada opción del menú divide la vista base (doble de zoom cada vez)
+        var divisor = self.ZOOMS[zoom];
+        var level = levelFor(base / divisor);
         if (level === 0) return;
+
+        // la banda entera queda centrada en la banda; el resto, con la frecuencia en
+        // el centro aunque la vista se salga de la banda
+        var center = (divisor === 1 && bandFits) ? (lo + hi) / 2 : f;
 
         applyZoom(level, center);
         autoZoomed = true;

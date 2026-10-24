@@ -13,20 +13,21 @@ OpenWebRX+ 1.2.126). SHA-256: `de88ac281a11cba90ef5e66e9cc9ba6f558ef271afaef04ce
   - Clic derecho (o mantener pulsado en el móvil): elegir **cuánto zoom**:
     5 % (mínimo), 10 %, **25 % (normal)**, 50 % (máximo). El circulito muestra el zoom que se usará al activarlo.
 
-    | Zoom | Parte del perfil a la vista |
+    | Zoom | Qué se ve |
     |---|---|
-    | 5 % (mínimo) | 50 % |
-    | 10 % | 25 % |
-    | 25 % (normal) | 10 % |
-    | 50 % (máximo) | 5 % |
+    | 5 % (mínimo) | La banda entera, ajustada a sus márgenes (si la banda ocupa todo el perfil: la mitad del perfil) |
+    | 10 % | La mitad de esa vista, con la frecuencia en el centro aunque se salga de la banda |
+    | 25 % (normal) | La cuarta parte, frecuencia en el centro |
+    | 50 % (máximo) | La octava parte, frecuencia en el centro |
+
+    Cada opción hace el doble de zoom que la anterior; solo coinciden al llegar al máximo zoom de OpenWebRX.
   - Gris = desactivado. Verde con raya = activado.
   - Cada navegador guarda su elección en `localStorage` (`autozoom_on`, `autozoom_zoom`).
     La v1.0 usaba `autozoom_pct` con el significado contrario; la v1.1 lo ignora.
 - Con el autozoom activado:
-  - **3 s** después de sintonizar una frecuencia hace zoom a la banda que la contiene
+  - **3 s** después de sintonizar una frecuencia hace el zoom elegido según la banda que la contiene
     (bandas de la cinta del servidor, `/etc/openwebrx/bands.json`; si no hay cinta, la tabla del plugin).
-  - Si la banda ocupa todo o casi todo el perfil, hace el zoom elegido alrededor de la
-    frecuencia, desplazado para no salirse de la banda.
+    Si la frecuencia está en dos bandas, se usa la más estrecha.
   - Tocar el waterfall/escala (clic, rueda o toque) abre el rango completo sin sintonizar.
     Si en 3 s no se elige otra frecuencia, vuelve el zoom.
   - El ancho real es algo mayor que el % porque OpenWebRX solo tiene niveles de zoom fijos.

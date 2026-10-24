@@ -14,7 +14,9 @@ while ($l.IsListening) {
     }
     if ($ctx.Request.HttpMethod -eq 'OPTIONS') { $ctx.Response.Close(); continue }
     $rel = [Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath.TrimStart('/'))
-    if ($rel -eq '') { $rel = 'autozoom/simulacion/index.html' }
+    # la raíz lleva a la simulación (redirigir para que sus rutas relativas funcionen)
+    if ($rel -eq '') { $ctx.Response.Redirect('/autozoom/simulacion/'); $ctx.Response.Close(); continue }
+    if ($rel.EndsWith('/')) { $rel += 'index.html' }
     $path = [IO.Path]::GetFullPath((Join-Path $root $rel))
     if ($path.StartsWith($root) -and (Test-Path $path -PathType Leaf)) {
         $bytes = [IO.File]::ReadAllBytes($path)

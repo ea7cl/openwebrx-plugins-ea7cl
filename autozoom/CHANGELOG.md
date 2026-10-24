@@ -1,5 +1,11 @@
 # Historial de autozoom
 
+## v1.2 — 24-oct-2026
+- Escala nueva: 5 % = la banda entera; 10, 25 y 50 % = el doble de zoom cada vez,
+  con la frecuencia en el centro aunque la vista se salga de la banda.
+- Arreglo: en perfiles donde la banda cabe entera (p. ej. 🟡 80m), todas las opciones daban la misma vista.
+- La simulación compara las cuatro opciones e incluye los perfiles de 80 m.
+
 ## v1.1 — 24-oct-2026
 - El porcentaje del menú ahora indica **cuánto zoom**: 5 % (mínimo) … 50 % (máximo).
   Normal = 25 %, que da la misma vista que el normal de la v1.0.

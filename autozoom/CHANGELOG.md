@@ -1,5 +1,10 @@
 # Historial de autozoom
 
+## v1.1 — 24-oct-2026
+- El porcentaje del menú ahora indica **cuánto zoom**: 5 % (mínimo) … 50 % (máximo).
+  Normal = 25 %, que da la misma vista que el normal de la v1.0.
+- La preferencia se guarda como `autozoom_zoom` (la antigua `autozoom_pct` significaba lo contrario).
+
 ## v1.0 — 24-oct-2026 (versión base)
 - Botón AZ junto a LST: clic activa/desactiva; **desactivado por defecto**; cada navegador lo recuerda.
 - Clic derecho en AZ: menú de % del perfil a la vista (5, 10 normal, 25, 50).

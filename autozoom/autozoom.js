@@ -5,12 +5,12 @@
  * - clic: activa o desactiva el autozoom. Por defecto está desactivado y cada
  *   navegador recuerda su elección.
  * - clic derecho (o mantener pulsado en el móvil): elegir cuánto zoom hacer,
- *   como porcentaje del perfil que queda a la vista.
+ *   de 5 % (mínimo) a 50 % (máximo).
  *
  * Con el autozoom activado:
  * - 3 s después de sintonizar una frecuencia hace zoom a la banda que la contiene.
- *   Si la banda ocupa todo o casi todo el perfil, muestra el porcentaje elegido
- *   alrededor de la frecuencia, sin salirse de la banda.
+ *   Si la banda ocupa todo o casi todo el perfil, hace el zoom elegido alrededor
+ *   de la frecuencia, sin salirse de la banda.
  * - Al tocar el waterfall/escala (clic, rueda o toque) vuelve a la vista completa.
  *   Ese toque solo abre el rango. Si en 3 s no se elige otra frecuencia, vuelve el zoom.
  */
@@ -19,8 +19,9 @@ Plugins.autozoom.no_css = true;
 
 Plugins.autozoom.DELAY_MS = 3000;          // espera antes de hacer zoom
 Plugins.autozoom.MARGIN = 0.05;            // 5 % de margen a cada lado de la banda
-Plugins.autozoom.PERCENTS = [5, 10, 25, 50]; // opciones del menú: % del perfil a la vista
-Plugins.autozoom.DEFAULT_PERCENT = 10;
+// opciones del menú: % de zoom -> % del perfil que queda a la vista (más zoom = se ve menos)
+Plugins.autozoom.ZOOMS = { 5: 50, 10: 25, 25: 10, 50: 5 };
+Plugins.autozoom.DEFAULT_ZOOM = 25;
 
 // Bandas en Hz: [nombre, inicio, fin]. IARU Región 1 + radiodifusión. Edítalas a tu gusto.
 // Si una frecuencia cae en varias, se usa la más estrecha.
@@ -71,7 +72,7 @@ Plugins.autozoom.init = function () {
     var autoZoomed = false;
     var swallowUntilUp = false;
 
-    // preferencias de este navegador (por defecto: desactivado y al 10 %)
+    // preferencias de este navegador (por defecto: desactivado y zoom normal)
     function load(key) {
         try { return localStorage.getItem(key); } catch (e) { return null; }
     }
@@ -79,8 +80,9 @@ Plugins.autozoom.init = function () {
         try { localStorage.setItem(key, value); } catch (e) {}
     }
     var enabled = load('autozoom_on') === '1';
-    var percent = parseInt(load('autozoom_pct'), 10);
-    if (self.PERCENTS.indexOf(percent) < 0) percent = self.DEFAULT_PERCENT;
+    // 'autozoom_zoom' y no el antiguo 'autozoom_pct', que significaba lo contrario
+    var zoom = parseInt(load('autozoom_zoom'), 10);
+    if (!(zoom in self.ZOOMS)) zoom = self.DEFAULT_ZOOM;
 
     function currentFreq() {
         try {
@@ -143,10 +145,10 @@ Plugins.autozoom.init = function () {
 
         var level = levelFor(span);
 
-        // la banda ocupa todo o casi todo el perfil: el porcentaje elegido alrededor
-        // de la frecuencia, desplazado si hace falta para no salirse de la banda
+        // la banda ocupa todo o casi todo el perfil: el zoom elegido alrededor de la
+        // frecuencia, desplazado si hace falta para no salirse de la banda
         if (level === 0) {
-            span = Math.min(bandwidth * percent / 100, hi - lo);
+            span = Math.min(bandwidth * self.ZOOMS[zoom] / 100, hi - lo);
             level = levelFor(span);
             // los niveles de zoom son fijos: ajustar con el ancho que de verdad se verá
             var shown = Math.min(bandwidth / zoom_levels[level], hi - lo);
@@ -241,9 +243,9 @@ Plugins.autozoom.init = function () {
         if (!button) return;
         $(button)
             .attr('data-on', enabled ? '1' : '0')
-            .attr('data-pct', percent + '%')
-            .attr('title', 'Autozoom ' + (enabled ? 'activado' : 'desactivado') + ' (' + percent + ' %)\n' +
-                'Clic: activar o desactivar\nClic derecho: elegir el porcentaje');
+            .attr('data-pct', zoom + '%')
+            .attr('title', 'Autozoom ' + (enabled ? 'activado' : 'desactivado') + ' (zoom ' + zoom + ' %)\n' +
+                'Clic: activar o desactivar\nClic derecho: elegir cuánto zoom');
     }
 
     function setEnabled(on) {
@@ -262,14 +264,16 @@ Plugins.autozoom.init = function () {
     function openMenu() {
         closeMenu();
         var $menu = $('<div id="autozoom-menu"></div>')
-            .append('<div class="autozoom-title">Vista con zoom (% del perfil)</div>');
-        self.PERCENTS.forEach(function (p) {
+            .append('<div class="autozoom-title">Cuánto zoom</div>');
+        var notes = { 5: ' (mínimo)', 50: ' (máximo)' };
+        notes[self.DEFAULT_ZOOM] = ' (normal)';
+        Object.keys(self.ZOOMS).map(Number).sort(function (a, b) { return a - b; }).forEach(function (p) {
             $('<div></div>')
-                .text(p + ' %' + (p === self.DEFAULT_PERCENT ? ' (normal)' : ''))
-                .toggleClass('autozoom-sel', p === percent)
+                .text(p + ' %' + (notes[p] || ''))
+                .toggleClass('autozoom-sel', p === zoom)
                 .on('click', function () {
-                    percent = p;
-                    save('autozoom_pct', String(p));
+                    zoom = p;
+                    save('autozoom_zoom', String(p));
                     refreshButton();
                     closeMenu();
                     if (enabled) zoomToBand();

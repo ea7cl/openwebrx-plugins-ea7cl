@@ -1,5 +1,10 @@
 # Cambios — listeners (LST) versión EA7CL
 
+## v1.2 — 24-oct-2026
+- Frecuencias con dos decimales (430.95 MHz, 7177.00 kHz) en vez de cuatro, más pequeños y en un
+  azul más apagado que la parte entera. Solo se dejan más decimales
+  cuando hacen falta para no perder la frecuencia (145.6125 MHz).
+
 ## v1.1 — 24-oct-2026
 - La ventana ya no muestra primero una frecuencia equivocada al cambiar de sintonía:
   solo se publica cuando la frecuencia lleva 1,5 s quieta (`ESPERA_ESTABLE_MS`).

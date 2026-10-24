@@ -376,11 +376,17 @@ Plugins.listeners._setStatus = function (kind, text) {
 	this._render();
 };
 
+// EA7CL: dos decimales (430.95 MHz), salvo que haga falta mas para no
+// perder la frecuencia (145.6125 MHz): se quitan solo los ceros sobrantes
+Plugins.listeners._decimales = function (value) {
+	return value.toFixed(4).replace(/(\.\d\d\d*?)0+$/, '$1');
+};
+
 Plugins.listeners._formatFrequency = function (frequency) {
-	if (frequency >= 1e9) return (frequency / 1e9).toFixed(4) + ' GHz';
-	if (frequency >= 30e6) return (frequency / 1e6).toFixed(4) + ' MHz';
-	if (frequency >= 1e3) return (frequency / 1e3).toFixed(4) + ' kHz';
-	return Number(frequency).toFixed(4) + ' Hz';
+	if (frequency >= 1e9) return this._decimales(frequency / 1e9) + ' GHz';
+	if (frequency >= 30e6) return this._decimales(frequency / 1e6) + ' MHz';
+	if (frequency >= 1e3) return this._decimales(frequency / 1e3) + ' kHz';
+	return this._decimales(Number(frequency)) + ' Hz';
 };
 
 Plugins.listeners._formatDuration = function (isoDate) {
@@ -476,7 +482,18 @@ Plugins.listeners._renderReceiver = function (receiver, local) {
 					self._tune(data);
 				});
 			}
-			row.append($('<span class="owrx-listeners__frequency"></span>').text(self._formatFrequency(data.frequency)));
+			// EA7CL: los decimales mas pequeños y en otro tono
+			var freqText = self._formatFrequency(data.frequency);
+			var freqParts = /^(\d+)(\.\d+)(.*)$/.exec(freqText);
+			var freqCell = $('<span class="owrx-listeners__frequency"></span>');
+			if (freqParts) {
+				freqCell.append(document.createTextNode(freqParts[1]))
+					.append($('<span class="owrx-listeners__decimals"></span>').text(freqParts[2]))
+					.append(document.createTextNode(freqParts[3]));
+			} else {
+				freqCell.text(freqText);
+			}
+			row.append(freqCell);
 			var modeLabel = data.mode;
 			if (data.underlying_mode && data.underlying_mode_id !== data.mode_id) modeLabel += ' · ' + data.underlying_mode;
 			row.append($('<span class="owrx-listeners__mode"></span>').addClass(self._claseModo(data.mode_id)).text(modeLabel));

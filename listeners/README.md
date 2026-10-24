@@ -27,6 +27,8 @@ Todas están dentro de `plugin/listeners.js` y `plugin/listeners.css`, marcadas 
 - Cada modo con su color, como en el DX cluster (CW amarillo, USB rosa, LSB verde lima, FT8 cian,
   FT4 azul, digitales violeta, NFM rojo, WFM ocre, AM naranja).
 - Ventana con ancho mínimo y siempre dentro de la pantalla.
+- **Frecuencias con dos decimales (v1.2):** 430.95 MHz, 7177.00 kHz; más solo si hacen falta
+  (145.6125 MHz). Los decimales van más pequeños y en un azul más apagado (`.owrx-listeners__decimals`).
 - **Frecuencia estable (v1.1):** solo publica cuando la frecuencia lleva 1,5 s quieta
   (`ESPERA_ESTABLE_MS`). Antes se publicaba una frecuencia intermedia (al arrastrar, girar la
   rueda o teclear) y la buena tardaba hasta 6,5 s en aparecer.

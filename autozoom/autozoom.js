@@ -11,8 +11,10 @@
  *
  * Con el autozoom activado:
  * - 3 s después de sintonizar una frecuencia hace el zoom elegido.
- * - Al tocar el waterfall/escala (clic, rueda o toque) vuelve a la vista completa.
- *   Ese toque solo abre el rango. Si en 3 s no se elige otra frecuencia, vuelve el zoom.
+ * - Un clic o toque en el waterfall, la escala o un marcador sintoniza directamente
+ *   dentro del zoom; a los 3 s el zoom se recentra en la nueva frecuencia.
+ * - La rueda del ratón sobre el waterfall/escala abre el rango completo (sin
+ *   sintonizar). Si en 3 s no se elige otra frecuencia, vuelve el zoom.
  */
 
 Plugins.autozoom.no_css = true;
@@ -71,7 +73,6 @@ Plugins.autozoom.init = function () {
     var timer = null;
     var lastFreq = null;
     var autoZoomed = false;
-    var swallowUntilUp = false;
 
     // preferencias de este navegador (por defecto: desactivado y zoom normal)
     function load(key) {
@@ -179,33 +180,22 @@ Plugins.autozoom.init = function () {
         timer = setTimeout(zoomToBand, self.DELAY_MS);
     }
 
-    function onUserTouch(e) {
+    // la rueda abre el rango completo; un clic o toque (en el waterfall, la escala o
+    // un marcador) sintoniza dentro del zoom y el zoom se recentra a los 3 s
+    function onWheel(e) {
         if (!enabled || !inArea(e)) return;
         schedule();   // si en 3 s no se elige otra frecuencia, vuelve el zoom
         if (autoZoomed && zoom_level > 0) {
             zoomOut();
-            // este toque solo abre el rango completo, no sintoniza
+            // esta rueda solo abre el rango completo, no sintoniza
             e.stopPropagation();
             e.preventDefault();
-            if (e.type !== 'wheel') swallowUntilUp = true;
         } else {
             autoZoomed = false;
         }
     }
 
-    function onUserRelease(e) {
-        if (!swallowUntilUp) return;
-        e.stopPropagation();
-        e.preventDefault();
-        if (e.type === 'click' || e.type === 'touchend') swallowUntilUp = false;
-    }
-
-    ['mousedown', 'wheel', 'touchstart'].forEach(function (ev) {
-        document.addEventListener(ev, onUserTouch, { capture: true, passive: false });
-    });
-    ['mouseup', 'click', 'touchend'].forEach(function (ev) {
-        document.addEventListener(ev, onUserRelease, { capture: true, passive: false });
-    });
+    document.addEventListener('wheel', onWheel, { capture: true, passive: false });
 
     // mientras se mueve el ratón por el waterfall con la vista abierta, aplazar el zoom
     document.addEventListener('mousemove', function (e) {

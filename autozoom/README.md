@@ -28,8 +28,11 @@ instalada ahora: **v1.2** (etiqueta `autozoom-v1.2`, SHA-256 `ad1daeb9bbddfbde23
   - **3 s** después de sintonizar una frecuencia hace el zoom elegido según la banda que la contiene
     (bandas de la cinta del servidor, `/etc/openwebrx/bands.json`; si no hay cinta, la tabla del plugin).
     Si la frecuencia está en dos bandas, se usa la más estrecha.
-  - Tocar el waterfall/escala (clic, rueda o toque) abre el rango completo sin sintonizar.
-    Si en 3 s no se elige otra frecuencia, vuelve el zoom.
+  - Un clic o toque en el waterfall, la escala o un marcador **sintoniza directamente dentro del
+    zoom**; a los 3 s el zoom se recentra en la nueva frecuencia.
+  - La **rueda del ratón** sobre el waterfall/escala abre el rango completo sin sintonizar.
+    Si en 3 s no se elige otra frecuencia, vuelve el zoom. En el móvil (sin rueda) se usan los
+    botones de zoom de OpenWebRX o se desactiva AZ.
   - El ancho real es algo mayor que el % porque OpenWebRX solo tiene niveles de zoom fijos.
 
 ## Archivos

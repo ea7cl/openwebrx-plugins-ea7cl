@@ -1,5 +1,10 @@
 # Historial de autozoom
 
+## v1.3 — 24-oct-2026
+- Un clic en el waterfall, la escala o un marcador visible sintoniza a la primera, sin abrir
+  antes el rango completo; el zoom se recentra a los 3 s.
+- Solo la rueda del ratón abre el rango completo.
+
 ## v1.2 — 24-oct-2026
 - Escala nueva: 5 % = la banda entera; 10, 25 y 50 % = el doble de zoom cada vez,
   con la frecuencia en el centro aunque la vista se salga de la banda.

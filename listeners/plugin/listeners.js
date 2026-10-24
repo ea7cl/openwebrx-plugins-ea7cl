@@ -376,17 +376,9 @@ Plugins.listeners._setStatus = function (kind, text) {
 	this._render();
 };
 
-// EA7CL: dos decimales (430.95 MHz), salvo que haga falta mas para no
-// perder la frecuencia (145.6125 MHz): se quitan solo los ceros sobrantes
-Plugins.listeners._decimales = function (value) {
-	return value.toFixed(4).replace(/(\.\d\d\d*?)0+$/, '$1');
-};
-
+// EA7CL: siempre en MHz con precision de 10 Hz (432.27525 MHz)
 Plugins.listeners._formatFrequency = function (frequency) {
-	if (frequency >= 1e9) return this._decimales(frequency / 1e9) + ' GHz';
-	if (frequency >= 30e6) return this._decimales(frequency / 1e6) + ' MHz';
-	if (frequency >= 1e3) return this._decimales(frequency / 1e3) + ' kHz';
-	return this._decimales(Number(frequency)) + ' Hz';
+	return (Math.round(Number(frequency) / 10) / 1e5).toFixed(5) + ' MHz';
 };
 
 Plugins.listeners._formatDuration = function (isoDate) {
@@ -482,9 +474,10 @@ Plugins.listeners._renderReceiver = function (receiver, local) {
 					self._tune(data);
 				});
 			}
-			// EA7CL: los decimales mas pequeños y en otro tono
+			// EA7CL: los dos ultimos digitos (centenas y decenas de Hz) mas
+			// pequeños y en otro tono: 432.275|25 MHz
 			var freqText = self._formatFrequency(data.frequency);
-			var freqParts = /^(\d+)(\.\d+)(.*)$/.exec(freqText);
+			var freqParts = /^(\d+\.\d{3})(\d{2})(.*)$/.exec(freqText);
 			var freqCell = $('<span class="owrx-listeners__frequency"></span>');
 			if (freqParts) {
 				freqCell.append(document.createTextNode(freqParts[1]))

@@ -238,7 +238,7 @@ a.owrx-listeners__receiver-name {
 	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
-/* EA7CL: los decimales de la frecuencia mas pequeños y en un azul mas apagado */
+/* EA7CL: los dos ultimos digitos de la frecuencia (centenas y decenas de Hz) mas pequeños y en un azul mas apagado */
 .owrx-listeners .owrx-listeners__decimals {
 	font-size: 0.8em;
 	color: #6b9cc4 !important;

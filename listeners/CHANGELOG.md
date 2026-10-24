@@ -1,5 +1,9 @@
 # Cambios — listeners (LST) versión EA7CL
 
+## v1.3 — 25-oct-2026
+- Frecuencias siempre en MHz con precisión de 10 Hz (432.27525 MHz, 10489.54000 MHz, 7.17700 MHz).
+  Los dos últimos dígitos (centenas y decenas de Hz) van más pequeños y en un azul más apagado.
+
 ## v1.2 — 24-oct-2026
 - Frecuencias con dos decimales (430.95 MHz, 7177.00 kHz) en vez de cuatro, más pequeños y en un
   azul más apagado que la parte entera. Solo se dejan más decimales

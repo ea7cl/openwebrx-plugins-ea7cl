@@ -4,7 +4,7 @@ Plugin de receptor que hace zoom automático en el waterfall con la frecuencia
 sintonizada en el centro. No depende de las bandas. Cada oyente lo activa o desactiva desde su navegador.
 
 Servidor `openwebrx` (192.168.1.115, OpenWebRX+ 1.2.126). Versión base: v1.0 (etiqueta `autozoom-v1.0`);
-instalada ahora: **v1.5** (etiqueta `autozoom-v1.5`, SHA-256 `7d01cf783277dbc5ec424701b2076cc68c7902db31d1e43a0b66a6b2727ac3e8`).
+instalada ahora: **v1.6** (etiqueta `autozoom-v1.6`, SHA-256 `2d3ed8d6a8efdc2838cb1cfd81e1505b44cf4a882687aa2837a88a5d85f3dda0`).
 
 ## Cómo funciona
 
@@ -63,7 +63,8 @@ Cada versión estable queda marcada en Git con una etiqueta `autozoom-vX.Y`.
   - `autozoom.js.bak-2026-10-24-2203` — v1.2 (`autozoom-v1.2`)
   - `autozoom.js.bak-2026-10-24-2236` — v1.3 (`autozoom-v1.3`)
   - `autozoom.js.bak-2026-10-24-2255` — v1.4 (`autozoom-v1.4`)
-- Instalada ahora: v1.5 (`autozoom-v1.5`).
+  - `autozoom.js.bak-2026-10-25-0109` — v1.5 (`autozoom-v1.5`)
+- Instalada ahora: v1.6 (`autozoom-v1.6`).
 - Los navegadores guardan los archivos 1 hora en caché (`max-age=3600`): Ctrl+F5 para ver un cambio al momento.
 
 ## Procedimiento para una mejora
@@ -78,8 +79,8 @@ Cada versión estable queda marcada en Git con una etiqueta `autozoom-vX.Y`.
 ## Volver atrás
 
 ```bash
-# a la versión anterior del plugin (v1.4)
-sudo cp /home/ea7cl/autozoom.js.bak-2026-10-24-2255 /usr/lib/python3/dist-packages/htdocs/plugins/receiver/autozoom/autozoom.js
+# a la versión anterior del plugin (v1.5)
+sudo cp /home/ea7cl/autozoom.js.bak-2026-10-25-0109 /usr/lib/python3/dist-packages/htdocs/plugins/receiver/autozoom/autozoom.js
 # quitar el plugin del todo
 sudo cp /usr/lib/python3/dist-packages/htdocs/plugins/receiver/init.js.bak-2026-10-23-1917 /usr/lib/python3/dist-packages/htdocs/plugins/receiver/init.js && sudo rm -r /usr/lib/python3/dist-packages/htdocs/plugins/receiver/autozoom
 ```

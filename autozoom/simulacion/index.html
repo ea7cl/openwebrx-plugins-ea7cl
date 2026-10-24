@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación autozoom</title>
+<style>
+  :root { --bg: #fff; --fg: #1a1a1a; --line: #ddd; --ok: #1a7f37; --bad: #c62828; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #161616; --fg: #eee; --line: #333; --ok: #4caf50; --bad: #ef5350; } }
+  body { background: var(--bg); color: var(--fg); font: 14px system-ui, sans-serif; margin: 16px; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+  .ok { color: var(--ok); font-weight: 600; } .bad { color: var(--bad); font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Simulación de autozoom con tus perfiles</h1>
+<p>Ejecuta el <code>autozoom.js</code> real con datos falsos de OpenWebRX (sin conexión al receptor), activado y al porcentaje por defecto.</p>
+<table id="t"><thead><tr><th>Perfil</th><th>Frecuencia</th><th>Banda</th><th>Vista tras el zoom</th><th>Resultado</th></tr></thead><tbody></tbody></table>
+
+<script>
+// --- imitación mínima de OpenWebRX ---
+var BANDS = [
+  {name: 'FM Broadcast', low_bound: 87.5e6, high_bound: 108e6},
+  {name: 'VHF Air', low_bound: 108e6, high_bound: 137e6},
+  {name: 'VHF Satellite', low_bound: 137e6, high_bound: 138e6},
+  {name: '2m', low_bound: 144e6, high_bound: 148e6},
+  {name: '70cm', low_bound: 430e6, high_bound: 440e6}
+];
+var WIDTH = 1024;
+// zoom_max_level_hps deducido de lo medido en tu receptor (2,4 MHz -> último nivel 52,38)
+var HPS = 2.4e6 / (Math.pow(52.37869545554922, 14 / 13) * WIDTH);
+var zoom_levels_count = 14;
+
+var center_freq, bandwidth, zoom_levels, zoom_level = 0, zoom_center_rel = 0, zoom_center_where = 0;
+var offset = 0;
+var UI = { getDemodulator: function () { return { get_offset_frequency: function () { return offset; } }; } };
+var bandplan = { bands: BANDS, draw: function () {} };
+function resize_canvases() {} function mkscale() {}
+function mkzoomlevels() {
+  zoom_levels = [1];
+  var maxc = bandwidth / (WIDTH * HPS);
+  if (maxc < 1) return;
+  var r = Math.pow(maxc, 1 / zoom_levels_count);
+  for (var i = 1; i < zoom_levels_count; i++) zoom_levels.push(Math.pow(r, i));
+}
+
+// temporizadores controlados a mano
+var timers = [];
+window.setTimeout = function (fn) { timers.push(fn); return timers.length; };
+window.clearTimeout = function () {};
+var polls = [];
+window.setInterval = function (fn) { polls.push(fn); return polls.length; };
+
+var Plugins = {
+  autozoom: {},
+  addButton: function (id, title) {   // imitación del botón de OpenWebRX+
+    var b = document.createElement('div'); b.id = 'plugin-button-' + id; b.textContent = title;
+    document.body.appendChild(b); return b;
+  }
+};
+// la simulación prueba el plugin activado, con el porcentaje por defecto
+try { localStorage.setItem('autozoom_on', '1'); localStorage.removeItem('autozoom_zoom'); } catch (e) {}
+</script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="../autozoom.js"></script>
+<script>
+Plugins.autozoom.init();
+
+var CASES = [
+  ['116,9-126,9 AIRBAND', 121.9e6, 10e6, 123.85e6],
+  ['128-138 AIRBAND/ACARS', 133e6, 10e6, 132.5975e6],
+  ['128-138 AIRBAND/ACARS (cerca de 137)', 133e6, 10e6, 136.95e6],
+  ['128,5-138,5 Acars/Airband/NOAA', 133.5e6, 10e6, 136.975e6],
+  ['117-127 Airband', 122e6, 10e6, 121.875e6],
+  ['137,5-140 AIRBAND', 138.75e6, 2.5e6, 138.3965e6],
+  ['FM2 97,6-107,6', 102.6e6, 10e6, 98.9e6],
+  ['430-432 HAM 70cm', 431.2e6, 2.4e6, 430.48e6],
+  ['144 HAM 2m', 145.5e6, 4e6, 145.7e6]
+];
+
+var tb = document.querySelector('#t tbody');
+CASES.forEach(function (c) {
+  center_freq = c[1]; bandwidth = c[2]; offset = c[3] - c[1];
+  mkzoomlevels(); zoom_level = 0; timers = [];
+  polls.forEach(function (p) { p(); });          // detecta la frecuencia
+  timers.forEach(function (t) { t(); });          // pasan los 5 s
+  var band = BANDS.filter(function (b) { return c[3] >= b.low_bound && c[3] <= b.high_bound; })[0];
+  var vis = '-';
+  if (zoom_level > 0) {
+    var w = bandwidth / zoom_levels[zoom_level], cc = center_freq + zoom_center_rel;
+    var s = Math.max(cc - w / 2, center_freq - bandwidth / 2), e = Math.min(s + w, center_freq + bandwidth / 2);
+    s = e - w;
+    vis = (s / 1e6).toFixed(3) + ' – ' + (e / 1e6).toFixed(3) + ' MHz (' + Math.round(w / 1e3) + ' kHz)';
+  }
+  var tr = document.createElement('tr');
+  tr.innerHTML = '<td>' + c[0] + '</td><td>' + (c[3] / 1e6).toFixed(4) + ' MHz</td><td>' + (band ? band.name : 'ninguna') +
+    '</td><td>' + vis + '</td><td class="' + (zoom_level > 0 ? 'ok">zoom (nivel ' + zoom_level + ')' : 'bad">sin zoom') + '</td>';
+  tb.appendChild(tr);
+});
+</script>
+</body>
+</html>

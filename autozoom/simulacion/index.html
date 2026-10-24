@@ -105,14 +105,12 @@ function shownRange() {
   return (s / 1e6).toFixed(3) + ' – ' + (e / 1e6).toFixed(3) + ' MHz <b>(' + Math.round(w / 1e3) + ' kHz)</b>';
 }
 
-document.querySelector('#t thead tr').innerHTML = '<th>Perfil</th><th>Frecuencia</th><th>Banda</th>' +
+document.querySelector('#t thead tr').innerHTML = '<th>Perfil</th><th>Frecuencia</th>' +
   ZOOMS.map(function (z) { return '<th>Zoom ' + z + ' %</th>'; }).join('');
 var tb = document.querySelector('#t tbody');
 CASES.forEach(function (c) {
   center_freq = c[1]; bandwidth = c[2]; offset = c[3] - c[1];
   mkzoomlevels();
-  var band = BANDS.filter(function (b) { return c[3] >= b.low_bound && c[3] <= b.high_bound; })
-    .sort(function (a, b) { return (a.high_bound - a.low_bound) - (b.high_bound - b.low_bound); })[0];
   var cells = runs.map(function (r) {
     zoom_level = 0; timers = [];
     r.polls.forEach(function (p) { p(); });   // detecta la frecuencia
@@ -120,7 +118,7 @@ CASES.forEach(function (c) {
     return '<td>' + shownRange() + '</td>';
   });
   var tr = document.createElement('tr');
-  tr.innerHTML = '<td>' + c[0] + '</td><td>' + (c[3] / 1e6).toFixed(4) + ' MHz</td><td>' + (band ? band.name : 'ninguna') + '</td>' + cells.join('');
+  tr.innerHTML = '<td>' + c[0] + '</td><td>' + (c[3] / 1e6).toFixed(4) + ' MHz</td>' + cells.join('');
   tb.appendChild(tr);
 });
 </script>

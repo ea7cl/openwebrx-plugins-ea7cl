@@ -1,5 +1,11 @@
 # Historial de autozoom
 
+## v1.4 — 24-oct-2026
+- El zoom ya no depende de las bandas ni de la cinta: la frecuencia queda en el centro y el
+  porcentaje se aplica sobre el perfil (5 % = 1/2, 10 % = 1/4, 25 % normal = 1/8, 50 % = 1/16).
+- Funciona igual en todos los perfiles, también en los que solo cogen un trozo de banda o
+  no tienen banda en la cinta (p. ej. 137,5–140 MHz).
+
 ## v1.3 — 24-oct-2026
 - Un clic en el waterfall, la escala o un marcador visible sintoniza a la primera, sin abrir
   antes el rango completo; el zoom se recentra a los 3 s.

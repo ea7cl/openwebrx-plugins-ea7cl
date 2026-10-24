@@ -4,13 +4,13 @@
  * Botón AZ (junto a LST):
  * - clic: activa o desactiva el autozoom. Por defecto está desactivado y cada
  *   navegador recuerda su elección.
- * - clic derecho (o mantener pulsado en el móvil): elegir cuánto zoom hacer:
- *   5 % (mínimo) = la banda entera; 10, 25 y 50 % (máximo) = el doble de zoom
- *   cada vez, con la frecuencia en el centro aunque la vista se salga de la banda.
- *   Si la banda ocupa todo o casi todo el perfil, el 5 % es la mitad del perfil.
+ * - clic derecho (o mantener pulsado en el móvil): elegir cuánto zoom hacer,
+ *   de 5 % (mínimo: se ve la mitad del perfil) a 50 % (máximo: 1/16 del perfil).
+ *   Cada opción hace el doble de zoom que la anterior. No depende de las bandas.
  *
  * Con el autozoom activado:
- * - 3 s después de sintonizar una frecuencia hace el zoom elegido.
+ * - 3 s después de sintonizar una frecuencia hace el zoom elegido, con la
+ *   frecuencia en el centro.
  * - Un clic o toque en el waterfall, la escala o un marcador sintoniza directamente
  *   dentro del zoom; a los 3 s el zoom se recentra en la nueva frecuencia.
  * - La rueda del ratón sobre el waterfall/escala abre el rango completo (sin
@@ -20,53 +20,10 @@
 Plugins.autozoom.no_css = true;
 
 Plugins.autozoom.DELAY_MS = 3000;          // espera antes de hacer zoom
-Plugins.autozoom.MARGIN = 0.05;            // 5 % de margen a cada lado de la banda
-// opciones del menú: % de zoom -> cuántas veces se divide la vista base
-// (5 % = banda entera; cada opción siguiente, el doble de zoom)
-Plugins.autozoom.ZOOMS = { 5: 1, 10: 2, 25: 4, 50: 8 };
+// opciones del menú: % de zoom -> en cuántas partes se divide el perfil
+// (5 % = se ve la mitad; cada opción siguiente, el doble de zoom)
+Plugins.autozoom.ZOOMS = { 5: 2, 10: 4, 25: 8, 50: 16 };
 Plugins.autozoom.DEFAULT_ZOOM = 25;
-
-// Bandas en Hz: [nombre, inicio, fin]. IARU Región 1 + radiodifusión. Edítalas a tu gusto.
-// Si una frecuencia cae en varias, se usa la más estrecha.
-Plugins.autozoom.bands = [
-    ['2200m', 135700, 137800],
-    ['630m', 472000, 479000],
-    ['Onda Media', 531000, 1602000],
-    ['160m', 1810000, 2000000],
-    ['120m BC', 2300000, 2495000],
-    ['90m BC', 3200000, 3400000],
-    ['80m', 3500000, 3800000],
-    ['75m BC', 3900000, 4000000],
-    ['60m BC', 4750000, 5060000],
-    ['60m', 5351500, 5366500],
-    ['49m BC', 5900000, 6200000],
-    ['40m', 7000000, 7200000],
-    ['41m BC', 7200000, 7450000],
-    ['31m BC', 9400000, 9900000],
-    ['30m', 10100000, 10150000],
-    ['25m BC', 11600000, 12100000],
-    ['22m BC', 13570000, 13870000],
-    ['20m', 14000000, 14350000],
-    ['19m BC', 15100000, 15800000],
-    ['16m BC', 17480000, 17900000],
-    ['17m', 18068000, 18168000],
-    ['15m BC', 18900000, 19020000],
-    ['15m', 21000000, 21450000],
-    ['13m BC', 21450000, 21850000],
-    ['12m', 24890000, 24990000],
-    ['11m BC', 25670000, 26100000],
-    ['CB', 26965000, 27405000],
-    ['10m', 28000000, 29700000],
-    ['6m', 50000000, 52000000],
-    ['4m', 70000000, 70500000],
-    ['FM', 87500000, 108000000],
-    ['Aviación', 118000000, 137000000],
-    ['2m', 144000000, 146000000],
-    ['Marina VHF', 156000000, 162050000],
-    ['70cm', 430000000, 440000000],
-    ['PMR446', 446000000, 446200000],
-    ['23cm', 1240000000, 1300000000]
-];
 
 Plugins.autozoom.init = function () {
     var self = Plugins.autozoom;
@@ -96,22 +53,6 @@ Plugins.autozoom.init = function () {
         }
     }
 
-    // Bandas de la cinta (bandplan) del servidor; si no hay, la tabla de arriba
-    function bandList() {
-        if (typeof bandplan !== 'undefined' && bandplan && bandplan.bands && bandplan.bands.length) {
-            return bandplan.bands.map(function (b) { return [b.name, b.low_bound, b.high_bound]; });
-        }
-        return self.bands;
-    }
-
-    function findBand(f) {
-        var best = null;
-        bandList().forEach(function (b) {
-            if (f >= b[1] && f <= b[2] && (!best || (b[2] - b[1]) < (best[2] - best[1]))) best = b;
-        });
-        return best;
-    }
-
     function applyZoom(level, centerAbs) {
         zoom_level = level;
         zoom_center_rel = centerAbs - center_freq;
@@ -122,45 +63,26 @@ Plugins.autozoom.init = function () {
         if (typeof bookmarks !== 'undefined' && bookmarks.position) bookmarks.position();
     }
 
-    function zoomToBand() {
+    // el mayor nivel de zoom cuya anchura visible todavía cubre ese ancho
+    function levelFor(span) {
+        var level = 0;
+        for (var i = 0; i < zoom_levels.length; i++) {
+            if (bandwidth / zoom_levels[i] >= span) level = i;
+        }
+        return level;
+    }
+
+    // el zoom elegido, con la frecuencia en el centro (OpenWebRX no deja que la
+    // vista se salga del perfil: en los bordes queda desplazada)
+    function zoomToFreq() {
         timer = null;
         if (!enabled) return;
         var f = currentFreq();
         if (f === null) return;
-        var band = findBand(f);
-        if (!band) return;
-
-        // recortar la banda a lo que cubre el perfil
-        var lo = Math.max(band[1], center_freq - bandwidth / 2);
-        var hi = Math.min(band[2], center_freq + bandwidth / 2);
-
-        // el mayor nivel de zoom cuya anchura visible todavía cubre ese ancho
-        function levelFor(s) {
-            var level = 0;
-            for (var i = 0; i < zoom_levels.length; i++) {
-                if (bandwidth / zoom_levels[i] >= s) level = i;
-            }
-            return level;
-        }
-
-        // vista base: la banda entera con su margen; si la banda ocupa todo o casi
-        // todo el perfil (no hay zoom que la encuadre), la mitad del perfil
-        var base = (hi - lo) * (1 + 2 * self.MARGIN);
-        var bandFits = levelFor(base) > 0;
-        if (!bandFits) base = bandwidth / 2;
-
-        // cada opción del menú divide la vista base (doble de zoom cada vez)
-        var divisor = self.ZOOMS[zoom];
-        var level = levelFor(base / divisor);
+        var level = levelFor(bandwidth / self.ZOOMS[zoom]);
         if (level === 0) return;
-
-        // la banda entera queda centrada en la banda; el resto, con la frecuencia en
-        // el centro aunque la vista se salga de la banda
-        var center = (divisor === 1 && bandFits) ? (lo + hi) / 2 : f;
-
-        applyZoom(level, center);
+        applyZoom(level, f);
         autoZoomed = true;
-        if (Plugins._enable_debug) console.log('autozoom: ' + band[0] + ' nivel ' + level);
     }
 
     function zoomOut() {
@@ -177,7 +99,7 @@ Plugins.autozoom.init = function () {
     // (re)arranca la cuenta atrás hasta el zoom
     function schedule() {
         if (timer) clearTimeout(timer);
-        timer = setTimeout(zoomToBand, self.DELAY_MS);
+        timer = setTimeout(zoomToFreq, self.DELAY_MS);
     }
 
     // la rueda abre el rango completo; un clic o toque (en el waterfall, la escala o
@@ -244,7 +166,7 @@ Plugins.autozoom.init = function () {
         save('autozoom_on', on ? '1' : '0');
         refreshButton();
         if (timer) { clearTimeout(timer); timer = null; }
-        if (on) zoomToBand();
+        if (on) zoomToFreq();
         else if (autoZoomed) zoomOut();
     }
 
@@ -267,7 +189,7 @@ Plugins.autozoom.init = function () {
                     save('autozoom_zoom', String(p));
                     refreshButton();
                     closeMenu();
-                    if (enabled) zoomToBand();
+                    if (enabled) zoomToFreq();
                 })
                 .appendTo($menu);
         });

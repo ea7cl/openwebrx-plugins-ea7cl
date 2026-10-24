@@ -1,7 +1,7 @@
 # autozoom — plugin para OpenWebRX+ (EA7CL)
 
-Plugin de receptor que hace zoom automático en el waterfall a la banda de la
-frecuencia sintonizada. Cada oyente lo activa o desactiva desde su navegador.
+Plugin de receptor que hace zoom automático en el waterfall con la frecuencia
+sintonizada en el centro. No depende de las bandas. Cada oyente lo activa o desactiva desde su navegador.
 
 Servidor `openwebrx` (192.168.1.115, OpenWebRX+ 1.2.126). Versión base: v1.0 (etiqueta `autozoom-v1.0`);
 instalada ahora: **v1.3** (etiqueta `autozoom-v1.3`, SHA-256 `13a3c80658d3a30a6e32f8822bd93c200cd056eeea4e64c3e7b5fa8c8e5b8761`).
@@ -13,21 +13,20 @@ instalada ahora: **v1.3** (etiqueta `autozoom-v1.3`, SHA-256 `13a3c80658d3a30a6e
   - Clic derecho (o mantener pulsado en el móvil): elegir **cuánto zoom**:
     5 % (mínimo), 10 %, **25 % (normal)**, 50 % (máximo). El circulito muestra el zoom que se usará al activarlo.
 
-    | Zoom | Qué se ve |
+    | Zoom | Qué se ve (con la frecuencia en el centro) |
     |---|---|
-    | 5 % (mínimo) | La banda entera, ajustada a sus márgenes (si la banda ocupa todo el perfil: la mitad del perfil) |
-    | 10 % | La mitad de esa vista, con la frecuencia en el centro aunque se salga de la banda |
-    | 25 % (normal) | La cuarta parte, frecuencia en el centro |
-    | 50 % (máximo) | La octava parte, frecuencia en el centro |
+    | 5 % (mínimo) | La mitad del perfil |
+    | 10 % | 1/4 del perfil |
+    | 25 % (normal) | 1/8 del perfil |
+    | 50 % (máximo) | 1/16 del perfil |
 
     Cada opción hace el doble de zoom que la anterior; solo coinciden al llegar al máximo zoom de OpenWebRX.
+    Junto al borde del perfil la vista queda desplazada (OpenWebRX no deja que se salga del perfil).
   - Gris = desactivado. Verde con raya = activado.
   - Cada navegador guarda su elección en `localStorage` (`autozoom_on`, `autozoom_zoom`).
     La v1.0 usaba `autozoom_pct` con el significado contrario; la v1.1 lo ignora.
 - Con el autozoom activado:
-  - **3 s** después de sintonizar una frecuencia hace el zoom elegido según la banda que la contiene
-    (bandas de la cinta del servidor, `/etc/openwebrx/bands.json`; si no hay cinta, la tabla del plugin).
-    Si la frecuencia está en dos bandas, se usa la más estrecha.
+  - **3 s** después de sintonizar una frecuencia hace el zoom elegido, centrado en ella.
   - Un clic o toque en el waterfall, la escala o un marcador **sintoniza directamente dentro del
     zoom**; a los 3 s el zoom se recentra en la nueva frecuencia.
   - La **rueda del ratón** sobre el waterfall/escala abre el rango completo sin sintonizar.
@@ -46,7 +45,7 @@ Cada versión estable queda marcada en Git con una etiqueta `autozoom-vX.Y`.
 | `init.js` | Línea que carga el plugin (ya añadida al `init.js` del servidor). |
 | `scripts/autozoom-install.sh` | Primera instalación: copia de `init.js`, carpeta del plugin y línea en `init.js`. |
 | `scripts/autozoom-update.sh` | Actualización: copia del plugin instalado en `~/autozoom.js.bak-FECHA` y sustitución. |
-| `simulacion/index.html` | Simulación con tus perfiles y bandas reales, sin tocar el receptor. |
+| `simulacion/index.html` | Simulación con tus perfiles, sin tocar el receptor. |
 | `../servir.ps1` | Servidor local (localhost:8765) para abrir la simulación. |
 | `CHANGELOG.md` | Historial de versiones. |
 
@@ -85,6 +84,6 @@ sudo cp /usr/lib/python3/dist-packages/htdocs/plugins/receiver/init.js.bak-2026-
 
 ## Pendiente / ideas
 
-- Perfiles 137,5–140 y 138–140 MHz: sin zoom por encima de 138 MHz porque la cinta no tiene banda ahí
-  (añadirla a `bands.json` o usar la tabla del plugin cuando la cinta no tenga banda).
 - Que el circulito diga «OFF» cuando está desactivado.
+- Un gesto en el móvil (sin rueda) para abrir el rango completo, por ejemplo el doble toque.
+- En el diseño de móvil la columna AZ/DOP/LST queda medio cortada (viene del tema, afecta a todos los botones).

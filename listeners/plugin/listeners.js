@@ -34,6 +34,8 @@ Plugins.listeners.state = {
 	presences: [],
 	lastPayload: '',
 	lastTrackAt: 0,
+	candidatePayload: '',
+	candidateSince: 0,
 	tuningSignature: '',
 	tunedSince: null,
 	country: '',
@@ -62,6 +64,9 @@ Plugins.listeners._number = function (value) {
 // EA7CL: mostrar tambien la localidad aproximada del oyente (segun su IP;
 // a veces sale la ciudad del proveedor de internet). false = solo bandera.
 Plugins.listeners.MOSTRAR_LOCALIDAD = true;
+
+// EA7CL: milisegundos que la frecuencia debe estar quieta antes de publicarla
+Plugins.listeners.ESPERA_ESTABLE_MS = 1500;
 
 // EA7CL: cada modo con su color, igual que en el DX cluster
 // (CW amarillo, USB rosa, LSB verde lima, FT8 cian, FT4 azul, digitales violeta,
@@ -275,6 +280,16 @@ Plugins.listeners._publish = function () {
 	if (!payload || payload.frequency === null || !payload.profile_key) return;
 	var serialized = JSON.stringify(payload);
 	if (serialized === this.state.lastPayload) return;
+
+	// EA7CL: no publicar las frecuencias de paso (arrastrar, rueda, teclear):
+	// esperar a que la sintonia lleve ESPERA_ESTABLE_MS sin cambiar. Si no, se
+	// publicaba la primera frecuencia intermedia y la buena tardaba hasta 6,5 s.
+	if (serialized !== this.state.candidatePayload) {
+		this.state.candidatePayload = serialized;
+		this.state.candidateSince = Date.now();
+		return;
+	}
+	if (Date.now() - this.state.candidateSince < this.ESPERA_ESTABLE_MS) return;
 
 	// Supabase Presence is rate-limited. Coalesce rapid tuning changes and
 	// publish the most recent receiver state when the interval expires.

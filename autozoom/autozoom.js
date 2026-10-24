@@ -136,6 +136,8 @@ Plugins.autozoom.init = function () {
     $('<style id="autozoom-style"></style>').text(
         // order:-1 lo pone arriba de la columna, para no tapar LST ni quedar bajo la barra CPU.
         // El porcentaje va dentro del botón ("AZ 25%"), sin nada encima que tape las letras.
+        // sin el menú de iOS de seleccionar/copiar al mantener pulsado
+        '#plugin-button-autozoom{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}' +
         '#plugin-button-autozoom{order:-1;white-space:nowrap;font-weight:bold;letter-spacing:.5px;' +
             'color:#9aa4ad !important;background:#2a3138 !important;border:1px solid #56606a;border-radius:3px}' +
         '#plugin-button-autozoom .autozoom-pct{margin-left:4px;font-size:.85em;font-weight:normal}' +
@@ -209,6 +211,20 @@ Plugins.autozoom.init = function () {
             e.preventDefault();
             openMenu();
         });
+
+        // iOS no lanza "contextmenu" al mantener pulsado: detectar la pulsación
+        // larga a mano y, al soltar, no activar/desactivar el autozoom
+        var pressTimer = null, longPress = false;
+        button.addEventListener('touchstart', function () {
+            longPress = false;
+            pressTimer = setTimeout(function () { longPress = true; openMenu(); }, 500);
+        }, { passive: true });
+        button.addEventListener('touchmove', function () { clearTimeout(pressTimer); }, { passive: true });
+        button.addEventListener('touchcancel', function () { clearTimeout(pressTimer); }, { passive: true });
+        button.addEventListener('touchend', function (e) {
+            clearTimeout(pressTimer);
+            if (longPress) e.preventDefault();   // evita el clic que vendría después
+        }, { passive: false });
     }
     document.addEventListener('mousedown', function (e) {
         if (!e.target.closest || !e.target.closest('#autozoom-menu')) closeMenu();

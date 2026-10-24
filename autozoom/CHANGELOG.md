@@ -1,5 +1,10 @@
 # Historial de autozoom
 
+## v1.6 — 25-oct-2026
+- iPhone/iPad: mantener pulsado el botón AZ abre el menú de zoom (iOS no genera el «clic derecho»).
+  Al soltar tras la pulsación larga no se activa/desactiva el autozoom.
+- Sin el menú de iOS de seleccionar/copiar sobre el botón.
+
 ## v1.5 — 24-oct-2026
 - Botón más visible: el porcentaje va dentro del botón («AZ 25%») en vez de un circulito que tapaba la Z.
 - Desactivado: gris sobre fondo oscuro con borde. Activado: blanco sobre verde intenso.

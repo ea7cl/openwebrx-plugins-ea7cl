@@ -1,5 +1,9 @@
 # Historial de autozoom
 
+## v1.5 — 24-oct-2026
+- Botón más visible: el porcentaje va dentro del botón («AZ 25%») en vez de un circulito que tapaba la Z.
+- Desactivado: gris sobre fondo oscuro con borde. Activado: blanco sobre verde intenso.
+
 ## v1.4 — 24-oct-2026
 - El zoom ya no depende de las bandas ni de la cinta: la frecuencia queda en el centro y el
   porcentaje se aplica sobre el perfil (5 % = 1/2, 10 % = 1/4, 25 % normal = 1/8, 50 % = 1/16).

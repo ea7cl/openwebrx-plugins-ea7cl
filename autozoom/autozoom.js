@@ -134,13 +134,13 @@ Plugins.autozoom.init = function () {
 
     // --- botón AZ y menú de porcentaje ---
     $('<style id="autozoom-style"></style>').text(
-        // order:-1 lo pone arriba de la columna, para no tapar LST ni quedar bajo la barra CPU
-        '#plugin-button-autozoom{position:relative;order:-1;white-space:nowrap;font-weight:bold}' +
-        '#plugin-button-autozoom::after{content:attr(data-pct);position:absolute;top:-5px;right:-9px;' +
-            'box-sizing:border-box;min-width:15px;height:16px;padding:0 3px;border:1px solid rgba(255,255,255,.75);' +
-            'border-radius:8px;color:#fff;background:#5a6570;font:bold 9px/14px sans-serif;text-align:center}' +
-        '#plugin-button-autozoom[data-on="1"]{color:#6ff08f !important;box-shadow:inset 0 -3px #42c86a}' +
-        '#plugin-button-autozoom[data-on="1"]::after{background:#00c743}' +
+        // order:-1 lo pone arriba de la columna, para no tapar LST ni quedar bajo la barra CPU.
+        // El porcentaje va dentro del botón ("AZ 25%"), sin nada encima que tape las letras.
+        '#plugin-button-autozoom{order:-1;white-space:nowrap;font-weight:bold;letter-spacing:.5px;' +
+            'color:#9aa4ad !important;background:#2a3138 !important;border:1px solid #56606a;border-radius:3px}' +
+        '#plugin-button-autozoom .autozoom-pct{margin-left:4px;font-size:.85em;font-weight:normal}' +
+        '#plugin-button-autozoom[data-on="1"]{color:#fff !important;background:#1f9d45 !important;' +
+            'border-color:#6ff08f;box-shadow:0 0 6px rgba(111,240,143,.6)}' +
         '#autozoom-menu{position:fixed;z-index:10000;padding:4px 0;border:1px solid #3a454e;border-radius:4px;' +
             'background:#1b242c;color:#eef1f4;font:13px Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.5)}' +
         '#autozoom-menu div{padding:5px 14px;cursor:pointer;white-space:nowrap}' +
@@ -155,8 +155,8 @@ Plugins.autozoom.init = function () {
     function refreshButton() {
         if (!button) return;
         $(button)
+            .html('AZ<span class="autozoom-pct">' + zoom + '%</span>')
             .attr('data-on', enabled ? '1' : '0')
-            .attr('data-pct', zoom + '%')
             .attr('title', 'Autozoom ' + (enabled ? 'activado' : 'desactivado') + ' (zoom ' + zoom + ' %)\n' +
                 'Clic: activar o desactivar\nClic derecho: elegir cuánto zoom');
     }

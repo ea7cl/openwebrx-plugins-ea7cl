@@ -11,7 +11,7 @@ instalada ahora: **v1.4** (etiqueta `autozoom-v1.4`, SHA-256 `5fe3550831e43c4e08
 - **Botón AZ** (columna de plugins, encima de DOP y LST).
   - Clic: activar / desactivar. **Por defecto desactivado** (0 % de zoom, como si no existiera).
   - Clic derecho (o mantener pulsado en el móvil): elegir **cuánto zoom**:
-    5 % (mínimo), 10 %, **25 % (normal)**, 50 % (máximo). El circulito muestra el zoom que se usará al activarlo.
+    5 % (mínimo), 10 %, **25 % (normal)**, 50 % (máximo). El botón muestra el zoom que se usará («AZ 25%»).
 
     | Zoom | Qué se ve (con la frecuencia en el centro) |
     |---|---|
@@ -22,7 +22,7 @@ instalada ahora: **v1.4** (etiqueta `autozoom-v1.4`, SHA-256 `5fe3550831e43c4e08
 
     Cada opción hace el doble de zoom que la anterior; solo coinciden al llegar al máximo zoom de OpenWebRX.
     Junto al borde del perfil la vista queda desplazada (OpenWebRX no deja que se salga del perfil).
-  - Gris = desactivado. Verde con raya = activado.
+  - Desactivado = gris sobre fondo oscuro. Activado = blanco sobre verde intenso.
   - Cada navegador guarda su elección en `localStorage` (`autozoom_on`, `autozoom_zoom`).
     La v1.0 usaba `autozoom_pct` con el significado contrario; la v1.1 lo ignora.
 - Con el autozoom activado:
@@ -85,6 +85,5 @@ sudo cp /usr/lib/python3/dist-packages/htdocs/plugins/receiver/init.js.bak-2026-
 
 ## Pendiente / ideas
 
-- Que el circulito diga «OFF» cuando está desactivado.
 - Un gesto en el móvil (sin rueda) para abrir el rango completo, por ejemplo el doble toque.
 - En el diseño de móvil la columna AZ/DOP/LST queda medio cortada (viene del tema, afecta a todos los botones).

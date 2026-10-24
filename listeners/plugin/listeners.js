@@ -36,6 +36,8 @@ Plugins.listeners.state = {
 	lastTrackAt: 0,
 	tuningSignature: '',
 	tunedSince: null,
+	country: '',
+	city: '',
 	pendingTune: null,
 	publishTimer: null,
 	reconnectTimer: null,
@@ -43,7 +45,7 @@ Plugins.listeners.state = {
 	pollTimer: null,
 	renderTimer: null,
 	statusKind: 'idle',
-	statusText: 'Not configured'
+	statusText: 'Sin configurar'
 };
 
 Plugins.listeners._shortText = function (value, maxLength) {
@@ -55,6 +57,88 @@ Plugins.listeners._number = function (value) {
 	if (value === undefined || value === null || value === '') return null;
 	var number = Number(value);
 	return Number.isFinite(number) ? number : null;
+};
+
+// EA7CL: mostrar tambien la localidad aproximada del oyente (segun su IP;
+// a veces sale la ciudad del proveedor de internet). false = solo bandera.
+Plugins.listeners.MOSTRAR_LOCALIDAD = true;
+
+// EA7CL: cada modo con su color, igual que en el DX cluster
+// (CW amarillo, USB rosa, LSB verde lima, FT8 cian, FT4 azul, digitales violeta,
+// NFM rojo, WFM ocre, AM naranja)
+Plugins.listeners._claseModo = function (id) {
+	id = String(id || '').toLowerCase();
+	if (id === 'cw') return 'ea7-m-cw';
+	if (id === 'usb' || id === 'usbd') return 'ea7-m-usb';
+	if (id === 'lsb' || id === 'lsbd') return 'ea7-m-lsb';
+	if (id === 'ft8') return 'ea7-m-ft8';
+	if (id === 'ft4') return 'ea7-m-ft4';
+	if (id === 'nfm' || id === 'fm') return 'ea7-m-fm';
+	if (id === 'wfm') return 'ea7-m-wfm';
+	if (id === 'am' || id === 'sam') return 'ea7-m-am';
+	if (id) return 'ea7-m-digi';
+	return '';
+};
+Plugins.listeners.CSS_MODOS =
+	'.owrx-listeners .owrx-listeners__mode.ea7-m-cw{color:#ffd500 !important;font-weight:bold}' +
+	'.owrx-listeners .owrx-listeners__mode.ea7-m-usb{color:#ff7ad9 !important;font-weight:bold}' +
+	'.owrx-listeners .owrx-listeners__mode.ea7-m-lsb{color:#a6ff4d !important;font-weight:bold}' +
+	'.owrx-listeners .owrx-listeners__mode.ea7-m-ft8{color:#00e0ff !important;font-weight:bold}' +
+	'.owrx-listeners .owrx-listeners__mode.ea7-m-ft4{color:#5a8cff !important;font-weight:bold}' +
+	'.owrx-listeners .owrx-listeners__mode.ea7-m-digi{color:#c58cff !important;font-weight:bold}' +
+	'.owrx-listeners .owrx-listeners__mode.ea7-m-fm{color:#ff6b6b !important;font-weight:bold}' +
+	'.owrx-listeners .owrx-listeners__mode.ea7-m-wfm{color:#d4a373 !important;font-weight:bold}' +
+	'.owrx-listeners .owrx-listeners__mode.ea7-m-am{color:#ffa040 !important;font-weight:bold}';
+
+// EA7CL: pais del oyente (solo el codigo de 2 letras, nunca la IP).
+Plugins.listeners._countryCode = function (value) {
+	var code = String(value || '').trim().toUpperCase();
+	return /^[A-Z]{2}$/.test(code) ? code : '';
+};
+
+Plugins.listeners._fetchCountry = function () {
+	var self = this;
+	var done = function (code, city) {
+		code = self._countryCode(code);
+		if (code) self.state.country = code;
+		if (code && city && self.MOSTRAR_LOCALIDAD) self.state.city = self._shortText(city, 40).trim();
+		return code;
+	};
+	// 1) geojs (pais + localidad)  2) ipwho.is (pais + localidad)
+	// 3) country.is y Cloudflare (solo pais)
+	return fetch('https://get.geojs.io/v1/ip/geo.json', {cache: 'no-store'}).then(function (response) {
+		return response.json();
+	}).then(function (data) {
+		if (!done(data && data.country_code, data && data.city)) throw new Error('no country');
+	}).catch(function () {
+		return fetch('https://ipwho.is/?fields=city,country_code,success', {cache: 'no-store'}).then(function (response) {
+			return response.json();
+		}).then(function (data) {
+			if (!done(data && data.country_code, data && data.city)) throw new Error('no country');
+		});
+	}).catch(function () {
+		return fetch('https://api.country.is/', {cache: 'no-store'}).then(function (response) {
+			return response.json();
+		}).then(function (data) {
+			if (!done(data && data.country)) throw new Error('no country');
+		});
+	}).catch(function () {
+		return fetch('https://www.cloudflare.com/cdn-cgi/trace', {cache: 'no-store'}).then(function (response) {
+			return response.text();
+		}).then(function (text) {
+			var match = /^loc=([A-Za-z]{2})$/m.exec(text);
+			done(match ? match[1] : '');
+		});
+	}).catch(function () { /* sin pais: el oyente aparece igualmente */ });
+};
+
+Plugins.listeners._countryName = function (code) {
+	try {
+		if (!this._countryNames) this._countryNames = new Intl.DisplayNames([navigator.language || 'es'], {type: 'region'});
+		return this._countryNames.of(code) || code;
+	} catch (error) {
+		return code;
+	}
 };
 
 Plugins.listeners._sessionId = function () {
@@ -178,7 +262,9 @@ Plugins.listeners._capture = function () {
 		underlying_mode: this._shortText(String(underlyingId).toUpperCase(), 40),
 		filter_low: this._number(bandpass.low_cut),
 		filter_high: this._number(bandpass.high_cut),
-		tuned_since: this.state.tunedSince
+		tuned_since: this.state.tunedSince,
+		country: this.state.country,
+		city: this.state.city
 	};
 };
 
@@ -223,12 +309,12 @@ Plugins.listeners._validPresence = function (presence) {
 	var tunedSince = Date.parse(presence.tuned_since);
 	return {
 		receiver_id: this._shortText(presence.receiver_id, 100) || 'unknown',
-		receiver_name: this._shortText(presence.receiver_name, 100) || 'Receiver',
+		receiver_name: this._shortText(presence.receiver_name, 100) || 'Receptor',
 		receiver_url: this._safeUrl(presence.receiver_url),
 		sdr_id: this._shortText(presence.sdr_id, 80),
 		profile_id: this._shortText(presence.profile_id, 80),
 		profile_key: this._shortText(presence.profile_key, 160),
-		profile_name: this._shortText(presence.profile_name, 100) || 'Profile',
+		profile_name: this._shortText(presence.profile_name, 100) || 'Perfil',
 		frequency: Math.round(frequency),
 		mode_id: this._shortText(presence.mode_id, 40),
 		mode: this._shortText(presence.mode, 40) || '—',
@@ -236,7 +322,9 @@ Plugins.listeners._validPresence = function (presence) {
 		underlying_mode: this._shortText(presence.underlying_mode, 40),
 		filter_low: this._number(presence.filter_low),
 		filter_high: this._number(presence.filter_high),
-		tuned_since: Number.isFinite(tunedSince) ? new Date(tunedSince).toISOString() : null
+		tuned_since: Number.isFinite(tunedSince) ? new Date(tunedSince).toISOString() : null,
+		country: this._countryCode(presence.country),
+		city: this._shortText(presence.city, 40)
 	};
 };
 
@@ -321,10 +409,17 @@ Plugins.listeners._groups = function () {
 			tuning = profile.tunings[tuningKey] = {
 				data: presence,
 				count: 0,
+				countries: Object.create(null),
+				places: Object.create(null),
 				oldest: presence.tuned_since
 			};
 		}
 		tuning.count++;
+		if (presence.country) {
+			tuning.countries[presence.country] = (tuning.countries[presence.country] || 0) + 1;
+			var placeKey = presence.country + '|' + (presence.city || '');
+			tuning.places[placeKey] = (tuning.places[placeKey] || 0) + 1;
+		}
 		if (presence.tuned_since && (!tuning.oldest || presence.tuned_since < tuning.oldest)) {
 			tuning.oldest = presence.tuned_since;
 		}
@@ -342,7 +437,7 @@ Plugins.listeners._renderReceiver = function (receiver, local) {
 			.attr('href', receiver.url).text(receiver.name);
 	}
 	heading.append(name).append($('<span class="owrx-listeners__badge"></span>').text(receiver.count));
-	if (!local) heading.append($('<span class="owrx-listeners__remote"></span>').text('remote'));
+	if (!local) heading.append($('<span class="owrx-listeners__remote"></span>').text('remoto'));
 	section.append(heading);
 
 	Object.keys(receiver.profiles).sort(function (a, b) {
@@ -362,14 +457,44 @@ Plugins.listeners._renderReceiver = function (receiver, local) {
 			var data = tuning.data;
 			var row = $('<div class="owrx-listeners__tuning"></div>');
 			if (local) {
-				row.addClass('owrx-listeners__tuning--local').attr('title', 'Tune here').on('click', function () {
+				row.addClass('owrx-listeners__tuning--local').attr('title', 'Sintonizar aquí').on('click', function () {
 					self._tune(data);
 				});
 			}
 			row.append($('<span class="owrx-listeners__frequency"></span>').text(self._formatFrequency(data.frequency)));
 			var modeLabel = data.mode;
 			if (data.underlying_mode && data.underlying_mode_id !== data.mode_id) modeLabel += ' · ' + data.underlying_mode;
-			row.append($('<span class="owrx-listeners__mode"></span>').text(modeLabel));
+			row.append($('<span class="owrx-listeners__mode"></span>').addClass(self._claseModo(data.mode_id)).text(modeLabel));
+			// EA7CL: banderas de los paises de los oyentes, en la misma linea
+			var flags = $('<span class="owrx-listeners__countries"></span>');
+			Object.keys(tuning.places).sort().forEach(function (placeKey) {
+				var n = tuning.places[placeKey];
+				var code = placeKey.split('|')[0];
+				var city = placeKey.slice(code.length + 1);
+				var name = self._countryName(code);
+				var item = $('<span class="owrx-listeners__country"></span>')
+					.attr('title', (city ? city + ', ' : '') + name + (n > 1 ? ' \u00d7' + n : ''));
+				var img = $('<img class="owrx-listeners__flag" width="15" height="11" loading="lazy">')
+					.attr('src', 'https://flagcdn.com/' + code.toLowerCase() + '.svg')
+					.attr('alt', code)
+					.attr('style', 'width:15px !important;height:11px !important;min-width:0 !important;max-width:15px !important;max-height:11px !important;flex:0 0 15px;object-fit:cover;margin:0;padding:0;')
+					.on('error', function () { $(this).replaceWith($('<span></span>').text(code)); });
+				item.append(img);
+				if (city && self.MOSTRAR_LOCALIDAD) item.append($('<span class="owrx-listeners__city"></span>').text(city));
+				if (n > 1) item.append($('<span class="owrx-listeners__country-count"></span>').text('\u00d7' + n));
+				flags.append(item);
+			});
+			// EA7CL: oyentes sin pais conocido, para que la suma cuadre con el total de la fila
+			var known = Object.keys(tuning.countries).reduce(function (sum, code) { return sum + tuning.countries[code]; }, 0);
+			var unknown = tuning.count - known;
+			if (unknown > 0) {
+				var missing = $('<span class="owrx-listeners__country"></span>')
+					.attr('title', 'Pa\u00eds desconocido' + (unknown > 1 ? ' \u00d7' + unknown : ''));
+				missing.append($('<span class="owrx-listeners__noflag"></span>').text('?'));
+				if (unknown > 1) missing.append($('<span class="owrx-listeners__country-count"></span>').text('\u00d7' + unknown));
+				flags.append(missing);
+			}
+			row.append(flags);
 			row.append($('<span class="owrx-listeners__duration"></span>').text(self._formatDuration(tuning.oldest)));
 			row.append($('<span class="owrx-listeners__count"></span>').text(tuning.count));
 			block.append(row);
@@ -387,16 +512,16 @@ Plugins.listeners._render = function () {
 	var ids = Object.keys(receivers);
 	var localId = this._receiverId();
 	var total = this.state.presences.length;
-	$('#owrx-listeners-total').text(total + (total === 1 ? ' listener' : ' listeners'));
+	$('#owrx-listeners-total').text(total + (total === 1 ? ' oyente' : ' oyentes'));
 	$('#plugin-button-listeners')
 		.attr('data-count', total)
-		.attr('title', 'Listeners: ' + total)
-		.attr('aria-label', 'Listeners: ' + total);
+		.attr('title', 'Oyentes: ' + total)
+		.attr('aria-label', 'Oyentes: ' + total);
 	if (!ids.length) {
-		var emptyText = 'Waiting for Supabase…';
-		if (this.state.connected) emptyText = 'No active listeners.';
-		else if (this.state.statusKind === 'idle') emptyText = 'Supabase is not configured.';
-		else if (this.state.statusKind === 'error') emptyText = this.state.statusText + '. Check the browser console.';
+		var emptyText = 'Conectando…';
+		if (this.state.connected) emptyText = 'No hay oyentes activos.';
+		else if (this.state.statusKind === 'idle') emptyText = 'El plugin no está configurado.';
+		else if (this.state.statusKind === 'error') emptyText = this.state.statusText + '. Revisa la consola del navegador.';
 		content.append($('<div class="owrx-listeners__empty"></div>').text(emptyText));
 		return;
 	}
@@ -481,7 +606,7 @@ Plugins.listeners._scheduleReconnect = function (generation) {
 	this.state.reconnectAttempts++;
 	this.state.connected = false;
 	this.state.presences = [];
-	this._setStatus('connecting', 'Reconnecting in ' + Math.ceil(delay / 1000) + 's');
+	this._setStatus('connecting', 'Reconectando en ' + Math.ceil(delay / 1000) + ' s');
 	this.state.reconnectTimer = setTimeout(function () {
 		self.state.reconnectTimer = null;
 		if (generation === self.state.generation) self._connect(true);
@@ -500,12 +625,12 @@ Plugins.listeners._connect = function (retry) {
 	if (!retry) this.state.reconnectAttempts = 0;
 	this._disconnect();
 	if (!this.config.supabaseUrl || !this.config.supabaseKey) {
-		this._setStatus('idle', 'Not configured');
+		this._setStatus('idle', 'Sin configurar');
 		return Promise.resolve(false);
 	}
 
 	var generation = this.state.generation;
-	this._setStatus('connecting', 'Connecting');
+	this._setStatus('connecting', 'Conectando');
 	return this._loadSdk().then(function () {
 		if (generation !== self.state.generation) return false;
 		var projectUrl = self._normalizeSupabaseUrl(self.config.supabaseUrl);
@@ -525,7 +650,7 @@ Plugins.listeners._connect = function (retry) {
 				self.state.reconnectTimer = null;
 				self.state.reconnectAttempts = 0;
 				self.state.connected = true;
-				self._setStatus('live', 'Live');
+				self._setStatus('live', 'En directo');
 				self._publish();
 			} else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
 				self.state.connected = false;
@@ -539,7 +664,7 @@ Plugins.listeners._connect = function (retry) {
 		return true;
 	}).catch(function (error) {
 		if (generation === self.state.generation) {
-			self._setStatus('error', 'Connection error');
+			self._setStatus('error', 'Error de conexión');
 			console.error('Listeners:', error);
 			self._scheduleReconnect(generation);
 		}
@@ -571,19 +696,39 @@ Plugins.listeners.init = async function () {
 
 	this.state.initialized = true;
 	this.state.sessionId = this._sessionId();
+	this._fetchCountry();
+	// EA7CL: estilos de las banderas incluidos aqui para no depender de la cache del CSS
+	if (!document.getElementById('owrx-listeners-ea7cl-style5')) {
+		$('<style id="owrx-listeners-ea7cl-style5"></style>').text('.owrx-listeners .owrx-listeners__tuning{grid-template-columns:minmax(98px,auto) minmax(50px,auto) minmax(0,1fr) 46px 30px}.owrx-listeners .owrx-listeners__countries{grid-column:auto;display:flex;align-items:center;gap:4px;overflow:hidden;white-space:nowrap;font-size:inherit;color:inherit}.owrx-listeners .owrx-listeners__country{display:inline-flex;align-items:center;gap:3px;color:#9da8b0;font-size:.85em;min-width:0;white-space:nowrap}.owrx-listeners .owrx-listeners__city{overflow:hidden;text-overflow:ellipsis;max-width:110px;color:#e3e8ec}.owrx-listeners .owrx-listeners__countries{min-width:0}.owrx-listeners .owrx-listeners__flag{display:block;width:15px;height:11px;border-radius:1px;box-shadow:0 0 0 1px rgba(255,255,255,.15)}#plugin-window-listeners{height:600px;width:430px;min-width:min(400px,96vw) !important}.owrx-listeners{line-height:1.2 !important}.owrx-listeners .owrx-listeners__summary{padding:4px 10px !important}.owrx-listeners .owrx-listeners__hint{padding:3px 10px !important}.owrx-listeners .owrx-listeners__content{padding:4px !important}.owrx-listeners .owrx-listeners__receiver{margin-bottom:4px !important}.owrx-listeners .owrx-listeners__receiver-heading{padding:4px 8px !important}.owrx-listeners .owrx-listeners__profile-heading{padding:3px 8px !important}.owrx-listeners .owrx-listeners__tuning{padding:2px 8px 2px 16px !important;min-height:0 !important}.owrx-listeners .owrx-listeners__badge,.owrx-listeners .owrx-listeners__count,.owrx-listeners .owrx-listeners__profile-count{padding:0 5px !important}.owrx-listeners{font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif !important;font-size:13px !important;color:#eef1f4 !important;font-variant-numeric:tabular-nums;text-shadow:none !important}.owrx-listeners .owrx-listeners__summary,.owrx-listeners .owrx-listeners__hint{background:#1b242c !important;color:#eef1f4 !important}.owrx-listeners #owrx-listeners-total{font-weight:bold;color:#ffffff !important}.owrx-listeners .owrx-listeners__hint{color:#b9c3cb !important;font-size:12px !important}.owrx-listeners #owrx-listeners-status[data-status=live]{color:#6ff08f !important;font-weight:bold}.owrx-listeners .owrx-listeners__receiver-name{color:#ffffff !important}.owrx-listeners .owrx-listeners__profile-heading{color:#ffd166 !important}.owrx-listeners .owrx-listeners__frequency{color:#9fd4ff !important;font-weight:600}.owrx-listeners .owrx-listeners__mode{color:#e3e8ec !important}.owrx-listeners .owrx-listeners__duration{color:#c2ccd4 !important}.owrx-listeners .owrx-listeners__country{color:#e3e8ec !important}.owrx-listeners .owrx-listeners__noflag{display:inline-block;box-sizing:border-box;width:15px;height:11px;border-radius:1px;background:#3a454e;color:#e3e8ec;font-size:9px;line-height:11px;font-weight:bold;text-align:center;box-shadow:0 0 0 1px rgba(255,255,255,.15)}@media (max-width:500px){.owrx-listeners .owrx-listeners__tuning{grid-template-columns:minmax(100px,1fr) 65px auto 30px}}').appendTo('head');
+		$('<style id="owrx-listeners-ea7cl-modos"></style>').text(Plugins.listeners.CSS_MODOS).appendTo('head');
+	}
 	var button = Plugins.addButton('listeners', 'LST', function () { Plugins.toggleWindow('listeners'); });
-	$(button).attr('data-count', 0).attr('aria-label', 'Listeners: 0');
-	Plugins.addWindow('listeners', 'Listeners',
+	$(button).attr('data-count', 0).attr('aria-label', 'Oyentes: 0');
+	Plugins.addWindow('listeners', 'Oyentes',
 		'<div class="owrx-listeners">' +
 			'<div class="owrx-listeners__summary">' +
-				'<span id="owrx-listeners-total">0 listeners</span>' +
-				'<span id="owrx-listeners-status" data-status="idle">Not configured</span>' +
+				'<span id="owrx-listeners-total">0 oyentes</span>' +
+				'<span id="owrx-listeners-status" data-status="idle">Sin configurar</span>' +
 			'</div>' +
 			'<div id="owrx-listeners-content" class="owrx-listeners__content"></div>' +
-			'<div class="owrx-listeners__hint">Click a row on this receiver to tune there.</div>' +
+			'<div class="owrx-listeners__hint">Pulsa una fila para sintonizar esa frecuencia.</div>' +
 		'</div>');
 
 	var self = this;
+	// EA7CL: ventana con ancho minimo para las localidades y siempre dentro
+	// de la pantalla (OpenWebRX+ la coloca por su centro y recuerda el ancho
+	// antiguo; al ensancharla podia quedar medio fuera por la izquierda)
+	setInterval(function () {
+		var w = document.getElementById('plugin-window-listeners');
+		if (!w || w.offsetParent === null) return;
+		var minW = Math.min(400, Math.round(window.innerWidth * 0.96));
+		if (parseFloat(w.style.width) < minW) w.style.width = minW + 'px';
+		var r = w.getBoundingClientRect();
+		var left = parseFloat(w.style.left);
+		if (!isFinite(left)) return;
+		if (r.left < 4) w.style.left = (left + (4 - r.left)) + 'px';
+		else if (r.right > window.innerWidth - 4) w.style.left = (left - (r.right - window.innerWidth + 4)) + 'px';
+	}, 1000);
 	this.state.pollTimer = setInterval(function () { self._publish(); }, 1000);
 	this.state.renderTimer = setInterval(function () { self._render(); }, 30000);
 	$(document).on('server:config:after.listeners event:profile_changed.listeners', function () {

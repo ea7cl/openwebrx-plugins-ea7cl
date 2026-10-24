@@ -11,6 +11,8 @@
 }
 
 #plugin-button-listeners {
+	color: #ffd700 !important;
+	font-weight: bold !important;
 	position: relative;
 	white-space: nowrap;
 }
@@ -21,14 +23,14 @@
 	right: -7px;
 	box-sizing: border-box;
 	min-width: 15px;
-	height: 15px;
+	height: 16px;
 	padding: 0 4px;
 	border: 1px solid rgba(255, 255, 255, 0.75);
 	border-radius: 8px;
 	color: #fff;
-	background: #315c78;
+	background: #00c743; /*#315c78;*/
 	content: attr(data-count);
-	font: bold 9px/13px sans-serif;
+	font: bold 10px/13px sans-serif;
 	text-align: center;
 }
 
@@ -126,7 +128,7 @@ a.owrx-listeners__receiver-name {
 .owrx-listeners__badge,
 .owrx-listeners__count,
 .owrx-listeners__profile-count {
-	min-width: 20px;
+	min-width: 15px;
 	padding: 1px 5px;
 	border-radius: 10px;
 	color: #fff;
@@ -155,7 +157,7 @@ a.owrx-listeners__receiver-name {
 }
 
 .owrx-listeners__tuning {
-	grid-template-columns: minmax(105px, 1.25fr) minmax(65px, 0.8fr) 46px 30px;
+	grid-template-columns: minmax(105px, 1.25fr) minmax(65px, 0.8fr) auto 46px 30px;
 	gap: 7px;
 	padding: 6px 9px 6px 18px;
 	border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -203,10 +205,35 @@ a.owrx-listeners__receiver-name {
 	}
 
 	.owrx-listeners__tuning {
-		grid-template-columns: minmax(100px, 1fr) 65px 30px;
+		grid-template-columns: minmax(100px, 1fr) 65px auto 30px;
 	}
 
 	.owrx-listeners__duration {
 		display: none;
 	}
+}
+
+/* EA7CL: banderas de los paises de los oyentes, en la misma linea */
+.owrx-listeners__countries {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.owrx-listeners__country {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	color: #9da8b0;
+	font-size: 0.85em;
+}
+
+.owrx-listeners__flag {
+	display: block;
+	width: 15px;
+	height: 11px;
+	border-radius: 2px;
+	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
 }

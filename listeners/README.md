@@ -28,7 +28,7 @@ Todas están dentro de `plugin/listeners.js` y `plugin/listeners.css`, marcadas 
   FT4 azul, digitales violeta, NFM rojo, WFM ocre, AM naranja).
 - Ventana con ancho mínimo y siempre dentro de la pantalla.
 - **Frecuencias en MHz con precisión de 10 Hz (v1.3):** 432.275<sub>25</sub> MHz, 10489.540<sub>00</sub> MHz.
-  Los dos últimos dígitos (centenas y decenas de Hz) van más pequeños y en un azul más apagado
+  Los dos últimos dígitos (centenas y decenas de Hz) van más pequeños y en gris (v1.4)
   (`.owrx-listeners__decimals`).
 - **Frecuencia estable (v1.1):** solo publica cuando la frecuencia lleva 1,5 s quieta
   (`ESPERA_ESTABLE_MS`). Antes se publicaba una frecuencia intermedia (al arrastrar, girar la

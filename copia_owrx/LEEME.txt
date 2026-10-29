@@ -1,0 +1,86 @@
+ACTUALIZAR OPENWEBRX+ SIN PERDER LO PERSONALIZADO (EA7CL)
+
+Todo está en /home/ea7cl/owrx-personalizado. Entrar al servidor:  ssh openwebrx
+
+
+1) VER QUÉ TRAE LA VERSIÓN NUEVA (no toca nada)
+
+    sudo bash /home/ea7cl/owrx-personalizado/actualizar.sh --prueba
+
+   Dice si hay versión nueva, sus novedades, y qué pasará con cada archivo tuyo:
+     sin novedades, se pone el tuyo     la versión nueva no cambia ese archivo
+     novedades + tus cambios            se combinan solos
+     la versión nueva ya trae tu cambio no hay que hacer nada
+     CHOQUE                             los dos cambian las mismas líneas: hay que decidir
+
+
+2) ACTUALIZAR
+
+    sudo bash /home/ea7cl/owrx-personalizado/actualizar.sh
+
+   Hace, en este orden y sin preguntar:
+     1. copia completa de lo que hay ahora (crear-copia.sh)
+     2. compara tus cambios con la versión nueva; si hay CHOQUES se para aquí sin tocar nada
+     3. instala la versión nueva de OpenWebRX+ y de sus paquetes (csdr, decodificadores...)
+        conservando tu configuración de /etc/openwebrx
+     4. vuelve a poner tus archivos modificados y tus plugins
+     5. arranca OpenWebRX y comprueba: servicio en marcha, página respondiendo, sin errores
+        de Python, todos tus cambios en su sitio y todos los plugins de init.js presentes.
+        SI ALGO FALLA, VUELVE SOLO A COMO ESTABA.
+     6. copia de la versión nueva ya personalizada (base para la próxima vez)
+   Después: Ctrl+F5 en el navegador.
+   Todo lo que hace queda en /home/ea7cl/owrx-personalizado/actualizaciones.log
+
+
+3) SI SE PARA POR UN CHOQUE
+
+   El aviso dice qué archivos y dónde están, en actualizacion-VERSION-FECHA/combinados/...
+   Dentro de cada uno hay marcas así:
+       <<<<<<< tuyo
+       (tu versión de esas líneas)
+       =======
+       (la de la versión nueva)
+       >>>>>>> nuevo
+   Hay que dejar lo que se quiera (muchas veces las dos cosas) y borrar las tres marcas.
+   Las novedades de la versión nueva están en el .novedades.diff de al lado. Después:
+
+    sudo bash /home/ea7cl/owrx-personalizado/actualizar.sh --continuar
+
+
+4) VOLVER ATRÁS (si algo no te gusta después de actualizar)
+
+    sudo bash /home/ea7cl/owrx-personalizado/actualizar.sh --volver
+
+   Reinstala las versiones de los paquetes, la configuración y tus archivos de la última
+   copia hecha con la versión anterior. La configuración que había justo antes de volver
+   se guarda en antes-de-volver-FECHA/ (por si cambiaste ajustes después de actualizar).
+
+
+5) COPIA COMPLETA A MANO (en cualquier momento, por ejemplo después de cambiar algo)
+
+    sudo bash /home/ea7cl/owrx-personalizado/crear-copia.sh
+
+   actualizar.sh ya la hace solo antes y después de actualizar.
+
+   Qué hay en cada copia-FECHA (y en su .tar.gz):
+    modificados/   archivos de OpenWebRX+ cambiados (traducciones, estilos, index.html,
+                   la opción "30 days" de /clients...). La actualización los sustituye.
+    parches/       solo los cambios de cada archivo
+    propios/       plugins (init.js, rig_skin_es...), imágenes y demás archivos añadidos.
+    config/        /etc/openwebrx y /var/lib/openwebrx (ajustes, usuarios, bandas...).
+    versiones.txt  versión de cada paquete; los .deb están en paquetes/ (compartidos
+                   por todas las copias), para poder reinstalar exactamente lo que había.
+    restaurar.sh   repone modificados/ y propios/ a mano (lo usa --volver).
+
+   Si se actualiza con "apt upgrade" en vez de con actualizar.sh, después hay que ir a la
+   copia más reciente y ejecutar:
+    sudo bash restaurar.sh --prueba     (ver qué haría)
+    sudo bash restaurar.sh
+    sudo systemctl restart openwebrx
+
+
+Notas
+ - Doppler y toggle_scannable se cargan desde internet (0xAF) y cambian sin actualizar nada.
+ - Los archivos de este sistema están en el repositorio openwebrx-plugins-ea7cl, carpeta
+   copia_owrx/. Para instalarlos de nuevo en el servidor:
+    scp copia_owrx/*.sh copia_owrx/LEEME.txt openwebrx:/home/ea7cl/owrx-personalizado/

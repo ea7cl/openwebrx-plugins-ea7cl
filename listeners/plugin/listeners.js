@@ -595,12 +595,24 @@ Plugins.listeners._tune = function (data) {
 
 Plugins.listeners._profileChanged = function () {
 	var self = this;
-	setTimeout(function () {
-		var pending = self.state.pendingTune;
+	setTimeout(function () { self._publish(); }, 250);
+	// EA7CL: reintentar la sintonia hasta que el perfil termine de cargar
+	// (antes se aplicaba demasiado pronto y quedaba la frecuencia por defecto del perfil)
+	var pending = self.state.pendingTune;
+	if (!pending) return;
+	if (self.state.ea7Tune) clearInterval(self.state.ea7Tune);
+	var n = 0, bien = 0;
+	self.state.ea7Tune = setInterval(function () {
+		n++;
 		var select = document.getElementById('openwebrx-sdr-profiles-listbox');
-		if (pending && select && select.value === pending.profile_key) self._applyTune(pending);
-		self._publish();
-	}, 250);
+		if (!select || select.value !== pending.profile_key || n > 20) {
+			clearInterval(self.state.ea7Tune); self.state.ea7Tune = null; self.state.pendingTune = null; return;
+		}
+		var f = 0;
+		try { f = UI.getFrequency(); } catch (e) {}
+		if (Math.abs(f - pending.frequency) > 10) { bien = 0; self._applyTune(pending); }
+		else if (++bien >= 4) { clearInterval(self.state.ea7Tune); self.state.ea7Tune = null; self.state.pendingTune = null; }
+	}, 500);
 };
 
 Plugins.listeners._disconnect = function () {

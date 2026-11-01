@@ -41,6 +41,8 @@ Plugins.listeners.state = {
 	country: '',
 	city: '',
 	pendingTune: null,
+	pendingUntil: 0,
+	ea7Tune: null,
 	publishTimer: null,
 	reconnectTimer: null,
 	reconnectAttempts: 0,
@@ -67,6 +69,27 @@ Plugins.listeners.MOSTRAR_LOCALIDAD = true;
 
 // EA7CL: milisegundos que la frecuencia debe estar quieta antes de publicarla
 Plugins.listeners.ESPERA_ESTABLE_MS = 1500;
+
+// EA7CL: milisegundos que se vigila la sintonia tras pulsar una fila; si
+// OpenWebRX+ vuelve a poner la frecuencia por defecto del perfil, se corrige
+Plugins.listeners.ESPERA_SINTONIA_MS = 15000;
+
+// EA7CL: nombres de los perfiles de este receptor tal como los tiene esta pagina
+// (sin pasar por el traductor del navegador de otro oyente)
+Plugins.listeners._localProfileNames = function () {
+	var names = Object.create(null);
+	var select = document.getElementById('openwebrx-sdr-profiles-listbox');
+	if (!select) return names;
+	Array.prototype.forEach.call(select.options, function (option) {
+		if (option.value) names[option.value] = option.text;
+	});
+	return names;
+};
+
+// EA7CL: que el traductor del navegador no cambie los nombres que se publican
+Plugins.listeners._noTranslate = function () {
+	$('#openwebrx-sdr-profiles-listbox, .webrx-rx-title').attr('translate', 'no').addClass('notranslate');
+};
 
 // EA7CL: cada modo con su color, igual que en el DX cluster
 // (CW amarillo, USB rosa, LSB verde lima, FT8 cian, FT4 azul, digitales violeta,
@@ -276,6 +299,12 @@ Plugins.listeners._capture = function () {
 Plugins.listeners._publish = function () {
 	if (!this.state.connected || !this.state.channel) return;
 	var self = this;
+	// EA7CL: mientras se esta sintonizando desde la lista no publicar nada:
+	// por medio pasa la frecuencia por defecto del perfil nuevo
+	if (this.state.ea7Tune) {
+		this.state.candidatePayload = '';
+		return;
+	}
 	var payload = this._capture();
 	if (!payload || payload.frequency === null || !payload.profile_key) return;
 	var serialized = JSON.stringify(payload);
@@ -392,12 +421,18 @@ Plugins.listeners._formatDuration = function (isoDate) {
 
 Plugins.listeners._groups = function () {
 	var receivers = Object.create(null);
+	// EA7CL: en este receptor los nombres se toman de esta pagina, no de lo que
+	// envia cada oyente (si tiene el traductor activo llegan traducidos)
+	var localId = this._receiverId();
+	var localName = this._receiverName();
+	var localProfiles = this._localProfileNames();
 	this.state.presences.forEach(function (presence) {
+		var local = presence.receiver_id === localId;
 		var receiver = receivers[presence.receiver_id];
 		if (!receiver) {
 			receiver = receivers[presence.receiver_id] = {
 				id: presence.receiver_id,
-				name: presence.receiver_name,
+				name: local ? localName : presence.receiver_name,
 				url: presence.receiver_url,
 				count: 0,
 				profiles: Object.create(null)
@@ -409,7 +444,7 @@ Plugins.listeners._groups = function () {
 		if (!profile) {
 			profile = receiver.profiles[profileKey] = {
 				key: presence.profile_key,
-				name: presence.profile_name,
+				name: (local && localProfiles[presence.profile_key]) || presence.profile_name,
 				count: 0,
 				tunings: Object.create(null)
 			};
@@ -449,6 +484,7 @@ Plugins.listeners._renderReceiver = function (receiver, local) {
 		name = $('<a class="owrx-listeners__receiver-name" target="_blank" rel="noopener noreferrer"></a>')
 			.attr('href', receiver.url).text(receiver.name);
 	}
+	name.attr('translate', 'no').addClass('notranslate');
 	heading.append(name).append($('<span class="owrx-listeners__badge"></span>').text(receiver.count));
 	if (!local) heading.append($('<span class="owrx-listeners__remote"></span>').text('remoto'));
 	section.append(heading);
@@ -459,7 +495,7 @@ Plugins.listeners._renderReceiver = function (receiver, local) {
 		var profile = receiver.profiles[profileKey];
 		var block = $('<div class="owrx-listeners__profile"></div>');
 		var profileHeading = $('<div class="owrx-listeners__profile-heading"></div>')
-			.append($('<span></span>').text(profile.name))
+			.append($('<span translate="no" class="notranslate"></span>').text(profile.name))
 			.append($('<span class="owrx-listeners__profile-count"></span>').text(profile.count));
 		block.append(profileHeading);
 
@@ -568,51 +604,90 @@ Plugins.listeners._setFrequency = function (frequency) {
 Plugins.listeners._applyTune = function (data) {
 	var panel = this._panel();
 	if (!panel) return;
-	if (data.mode_id && panel.setMode) panel.setMode(data.mode_id, data.underlying_mode_id || undefined);
+	// EA7CL: en los modos analogicos el modo subyacente es el mismo; pasarlo
+	// hacia que OpenWebRX+ rehiciera el demodulador (y su filtro) cada vez
+	var underlying = data.underlying_mode_id && data.underlying_mode_id !== data.mode_id ? data.underlying_mode_id : undefined;
+	if (data.mode_id && panel.setMode) panel.setMode(data.mode_id, underlying);
 	var demodulator = panel.getDemodulator ? panel.getDemodulator() : null;
 	if (demodulator && demodulator.setBandpass && data.filter_low !== null && data.filter_high !== null) {
 		demodulator.setBandpass({low_cut: data.filter_low, high_cut: data.filter_high});
 	}
 	this._setFrequency(data.frequency);
-	this.state.pendingTune = null;
+};
+
+// EA7CL: el perfil nuevo ya esta cargado y la frecuencia cabe en su banda
+Plugins.listeners._tuneReady = function (data) {
+	var panel = this._panel();
+	if (!panel || typeof center_freq === 'undefined' || typeof bandwidth === 'undefined') return false;
+	if (panel.center_freq !== center_freq) return false;
+	return Math.abs(data.frequency - center_freq) < bandwidth / 2;
+};
+
+// EA7CL: frecuencia y modo son ya los de la fila pulsada (misma medida que se publica)
+Plugins.listeners._tuneOk = function (data) {
+	var panel = this._panel();
+	var frequency = this._nativeFrequency();
+	if (frequency === null || Math.abs(frequency - data.frequency) > 10) return false;
+	if (data.mode_id && !(panel && panel.mode && panel.mode.modulation === data.mode_id)) return false;
+	return true;
+};
+
+Plugins.listeners._stopTuneWatch = function (clearPending) {
+	if (this.state.ea7Tune) clearInterval(this.state.ea7Tune);
+	this.state.ea7Tune = null;
+	if (clearPending) this.state.pendingTune = null;
+};
+
+// EA7CL: vigilar la sintonia hasta que quede bien. Al cambiar de perfil
+// OpenWebRX+ rehace el demodulador con la frecuencia y el modo por defecto
+// del perfil, a veces mas de una vez y con retraso; se espera a que el perfil
+// este cargado, se aplica y se comprueba hasta que lleva 2 s sin moverse.
+Plugins.listeners._watchTune = function () {
+	var self = this;
+	this._stopTuneWatch(false);
+	var bien = 0;
+	this.state.ea7Tune = setInterval(function () {
+		var pending = self.state.pendingTune;
+		var select = document.getElementById('openwebrx-sdr-profiles-listbox');
+		if (!pending || !select || select.value !== pending.profile_key || Date.now() > self.state.pendingUntil) {
+			self._stopTuneWatch(true);
+			return;
+		}
+		if (!self._tuneReady(pending)) { bien = 0; return; }
+		if (!self._tuneOk(pending)) { bien = 0; self._applyTune(pending); return; }
+		// bien: se deja pendingTune hasta pendingUntil por si llega otra
+		// configuracion del servidor que vuelva a poner la frecuencia por defecto
+		if (++bien >= 4) self._stopTuneWatch(false);
+	}, 500);
 };
 
 Plugins.listeners._tune = function (data) {
 	var select = document.getElementById('openwebrx-sdr-profiles-listbox');
 	if (!select || !data.profile_key) return;
-	if (select.value === data.profile_key) {
-		this._applyTune(data);
-		return;
+	var same = select.value === data.profile_key;
+	if (!same) {
+		var exists = Array.prototype.some.call(select.options, function (option) {
+			return option.value === data.profile_key;
+		});
+		if (!exists || typeof window.sdr_profile_changed !== 'function') return;
 	}
-	var exists = Array.prototype.some.call(select.options, function (option) {
-		return option.value === data.profile_key;
-	});
-	if (!exists || typeof window.sdr_profile_changed !== 'function') return;
 	this.state.pendingTune = data;
-	select.value = data.profile_key;
-	window.sdr_profile_changed();
+	this.state.pendingUntil = Date.now() + this.ESPERA_SINTONIA_MS;
+	if (same) {
+		this._applyTune(data);
+	} else {
+		select.value = data.profile_key;
+		window.sdr_profile_changed();
+	}
+	this._watchTune();
 };
 
 Plugins.listeners._profileChanged = function () {
 	var self = this;
 	setTimeout(function () { self._publish(); }, 250);
-	// EA7CL: reintentar la sintonia hasta que el perfil termine de cargar
-	// (antes se aplicaba demasiado pronto y quedaba la frecuencia por defecto del perfil)
-	var pending = self.state.pendingTune;
-	if (!pending) return;
-	if (self.state.ea7Tune) clearInterval(self.state.ea7Tune);
-	var n = 0, bien = 0;
-	self.state.ea7Tune = setInterval(function () {
-		n++;
-		var select = document.getElementById('openwebrx-sdr-profiles-listbox');
-		if (!select || select.value !== pending.profile_key || n > 20) {
-			clearInterval(self.state.ea7Tune); self.state.ea7Tune = null; self.state.pendingTune = null; return;
-		}
-		var f = 0;
-		try { f = UI.getFrequency(); } catch (e) {}
-		if (Math.abs(f - pending.frequency) > 10) { bien = 0; self._applyTune(pending); }
-		else if (++bien >= 4) { clearInterval(self.state.ea7Tune); self.state.ea7Tune = null; self.state.pendingTune = null; }
-	}, 500);
+	// EA7CL: cada configuracion nueva del servidor puede devolver la frecuencia
+	// por defecto del perfil: si hay una sintonia pendiente, volver a vigilarla
+	if (this.state.pendingTune && Date.now() <= this.state.pendingUntil) this._watchTune();
 };
 
 Plugins.listeners._disconnect = function () {
@@ -733,6 +808,7 @@ Plugins.listeners.init = async function () {
 
 	this.state.initialized = true;
 	this.state.sessionId = this._sessionId();
+	this._noTranslate();
 	this._fetchCountry();
 	// EA7CL: estilos de las banderas incluidos aqui para no depender de la cache del CSS
 	if (!document.getElementById('owrx-listeners-ea7cl-style5')) {

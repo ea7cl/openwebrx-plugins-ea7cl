@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Prueba listeners</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<style>body{font:14px monospace;background:#fff;color:#000;padding:16px} .ok{color:green} .mal{color:red}</style>
+</head>
+<body>
+<!-- Simulación mínima de la página de OpenWebRX+ para probar listeners.js sin servidor -->
+<div class="webrx-rx-title">Receptor EA7CL Málaga</div>
+<select id="openwebrx-sdr-profiles-listbox">
+	<option value="sdr1|p20">Banda 20m</option>
+	<option value="sdr1|p40">Banda 40m</option>
+</select>
+<div class="webrx-actual-freq"></div>
+<pre id="log"></pre>
+<script>
+var log = function (txt, ok) {
+	var s = document.createElement('div');
+	if (ok !== undefined) s.className = ok ? 'ok' : 'mal';
+	s.textContent = (ok === undefined ? '' : ok ? 'OK   ' : 'MAL  ') + txt;
+	document.getElementById('log').appendChild(s);
+};
+
+// --- OpenWebRX+ simulado ---
+var center_freq = 14100000, bandwidth = 2400000;
+var PERFILES = {
+	'sdr1|p20': { center: 14100000, start: 14200000, mod: 'usb' },
+	'sdr1|p40': { center: 7100000, start: 7074000, mod: 'lsb' }
+};
+var display = { frequency: 14200000 };
+var demod = {
+	offset: 100000, low: 300, high: 2700, mod: 'usb',
+	get_offset_frequency: function () { return this.offset; },
+	set_offset_frequency: function (o) { this.offset = o; display.frequency = panel.center_freq + o; },
+	get_modulation: function () { return this.mod; },
+	get_secondary_demod: function () { return false; },
+	getBandpass: function () { return { low_cut: this.low, high_cut: this.high }; },
+	setBandpass: function (b) { this.low = b.low_cut; this.high = b.high_cut; }
+};
+var panel = {
+	center_freq: 14100000,
+	mode: { modulation: 'usb', name: 'USB' },
+	getDemodulator: function () { return demod; },
+	setMode: function (m) { this.mode = { modulation: m, name: m.toUpperCase() }; demod.mod = m; }
+};
+var UI = {
+	getDemodulatorPanel: function () { return panel; },
+	getFrequency: function () { return center_freq + demod.offset; },
+	getCwOffset: function () { return 0; }
+};
+$('.webrx-actual-freq').data('frequencyDisplay', display).on('frequencychange', function (e, f) {
+	demod.set_offset_frequency(f - panel.center_freq);
+});
+// el servidor manda la configuración del perfil: centro nuevo y frecuencia/modo por defecto
+var configurar = function (key) {
+	var p = PERFILES[key];
+	center_freq = p.center;
+	setTimeout(function () {
+		panel.center_freq = p.center;
+		panel.setMode(p.mod);
+		demod.set_offset_frequency(p.start - p.center);
+		$(document).trigger('server:config:after');
+	}, 50);
+};
+window.sdr_profile_changed = function () {
+	var key = $('#openwebrx-sdr-profiles-listbox').val();
+	setTimeout(function () { configurar(key); }, 1200);       // el SDR tarda en cambiar
+	setTimeout(function () { configurar(key); }, 4500);       // segunda configuración tardía
+};
+window.Plugins = { utils: { deepMerge: function (a, b, c) { return $.extend(true, a, b, c); } } };
+</script>
+<script src="../plugin/listeners.js"></script>
+<script>
+var L = Plugins.listeners;
+L._noTranslate();
+var publicados = [];
+L.state.connected = true;
+L.state.channel = { track: function (p) { publicados.push({ t: Date.now(), f: p.frequency, m: p.mode_id }); return Promise.resolve('ok'); } };
+L.ESPERA_ESTABLE_MS = 300;
+$(document).on('server:config:after', function () { L._profileChanged(); });
+var pub = setInterval(function () { L.state.lastTrackAt = 0; L._publish(); }, 100);
+
+// 1) nombres: un oyente con el traductor manda el perfil y el receptor traducidos
+log('translate=no en el desplegable: ' + $('#openwebrx-sdr-profiles-listbox').attr('translate'), $('#openwebrx-sdr-profiles-listbox').attr('translate') === 'no');
+L.state.presences = [
+	{ receiver_id: L._receiverId(), receiver_name: 'EA7CL Malaga Receiver', profile_key: 'sdr1|p20', profile_name: '20m Band', frequency: 14250000, mode_id: 'usb' },
+	{ receiver_id: L._receiverId(), receiver_name: 'Receptor EA7CL Málaga', profile_key: 'sdr1|p20', profile_name: 'Banda 20m', frequency: 14250000, mode_id: 'usb' },
+	{ receiver_id: 'otro', receiver_name: 'Other RX', profile_key: 'x|y', profile_name: 'Band X', frequency: 7000000, mode_id: 'cw' }
+];
+var g = L._groups();
+var local = g[L._receiverId()];
+log('perfil local con el primero traducido -> "' + local.profiles['sdr1|p20'].name + '"', local.profiles['sdr1|p20'].name === 'Banda 20m');
+log('receptor local -> "' + local.name + '"', local.name === 'Receptor EA7CL Málaga');
+log('receptor remoto sin tocar -> "' + g.otro.profiles['x|y'].name + '"', g.otro.profiles['x|y'].name === 'Band X');
+L.state.presences = [];
+
+// 2) pulsar una fila de otro perfil
+var inicio = Date.now();
+setTimeout(function () {
+	publicados = [];
+	inicio = Date.now();
+	L._tune({ profile_key: 'sdr1|p40', frequency: 7177000, mode_id: 'lsb', underlying_mode_id: 'lsb', filter_low: -2700, filter_high: -300 });
+}, 2000);
+setTimeout(function () {
+	var f = L._nativeFrequency();
+	log('tras cambiar de perfil (2 configuraciones del servidor) frecuencia = ' + f + ' modo = ' + panel.mode.modulation, f === 7177000 && panel.mode.modulation === 'lsb');
+	var malos = publicados.filter(function (p) { return p.f !== 7177000; });
+	log('publicaciones tras pulsar: ' + JSON.stringify(publicados.map(function (p) { return [p.t - inicio, p.f]; })), publicados.length > 0 && malos.length === 0);
+	// 3) misma fila del mismo perfil
+	demod.set_offset_frequency(7050000 - panel.center_freq);
+	L._tune({ profile_key: 'sdr1|p40', frequency: 7120500, mode_id: 'lsb', underlying_mode_id: 'lsb', filter_low: -2700, filter_high: -300 });
+	setTimeout(function () {
+		log('mismo perfil: frecuencia = ' + L._nativeFrequency(), L._nativeFrequency() === 7120500);
+		clearInterval(pub);
+		log('FIN');
+	}, 1500);
+}, 12000);
+</script>
+</body>
+</html>

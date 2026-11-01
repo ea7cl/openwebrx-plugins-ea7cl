@@ -1,5 +1,18 @@
 # Cambios — listeners (LST) versión EA7CL
 
+## v1.5 — 1-nov-2026
+- Los nombres de perfil y de receptor salen siempre en español, aunque algún oyente tenga el
+  traductor del navegador. Antes, si el primer oyente de un perfil lo tenía activo, la cabecera de
+  ese perfil salía traducida para todos. Ahora los nombres de este receptor se toman de la propia
+  página y no de lo que envía cada oyente. Además, el desplegable de perfiles y el título se marcan
+  para que el traductor no los cambie.
+- Al pulsar una fila de otro perfil se queda en la frecuencia y el modo de la fila. Antes podía
+  quedarse en la frecuencia por defecto del perfil: OpenWebRX+ la vuelve a poner con cada
+  configuración que manda el servidor, a veces dos veces y con retraso. Ahora se espera a que el
+  perfil esté cargado y se vigila durante 15 s (`ESPERA_SINTONIA_MS`), corrigiéndola si se mueve.
+- Mientras tanto no se publica nada, para que los demás no vean ni carguen la frecuencia de paso.
+- Recoge el reintento de sintonía del 30-oct, que estaba instalado pero no guardado aquí.
+
 ## v1.4 — 25-oct-2026
 - Los dos últimos dígitos de la frecuencia se distinguen mejor: más pequeños (72 %) y en gris
   en vez de azul apagado, que apenas se notaba.

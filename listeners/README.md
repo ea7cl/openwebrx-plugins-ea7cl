@@ -33,6 +33,12 @@ Todas están dentro de `plugin/listeners.js` y `plugin/listeners.css`, marcadas 
 - **Frecuencia estable (v1.1):** solo publica cuando la frecuencia lleva 1,5 s quieta
   (`ESPERA_ESTABLE_MS`). Antes se publicaba una frecuencia intermedia (al arrastrar, girar la
   rueda o teclear) y la buena tardaba hasta 6,5 s en aparecer.
+- **Nombres sin traducir (v1.5):** los nombres de perfil y de receptor de este receptor se toman
+  de la propia página, no de lo que envía cada oyente, que llega traducido si tiene el traductor
+  del navegador. El desplegable de perfiles y el título llevan `translate="no"`.
+- **Sintonía correcta al cambiar de perfil (v1.5):** al pulsar una fila se espera a que el perfil
+  esté cargado y se vigila 15 s (`ESPERA_SINTONIA_MS`) que frecuencia y modo sigan siendo los de
+  la fila; mientras tanto no se publica nada.
 
 El aspecto del botón (LED, número dentro) lo pone [`botones_ea7cl`](../botones_ea7cl/), no este plugin.
 
@@ -61,6 +67,7 @@ no desde internet, así que tampoco cambia sola si 0xAF publica otra versión.
 | `plugin/listeners.js` | El plugin. |
 | `plugin/listeners.css` | Sus estilos. |
 | `scripts/listeners-install.sh` | Instala o actualiza: copia de seguridad de la carpeta del servidor y copia los dos ficheros. |
+| `prueba/prueba.html` | Simulación sin servidor: nombres traducidos y cambio de perfil. Se abre con `servir.ps1` en http://localhost:8765/listeners/prueba/prueba.html; todas las líneas deben salir «OK». |
 
 ## Configuración en `init.js` del servidor
 

@@ -40,7 +40,7 @@ chmod 755 "$SRC/gen_profiles.py"
 install -m 644 "$SRC/gen-profiles.path" "$SRC/gen-profiles.service" "$SD/"
 systemctl daemon-reload
 systemctl enable --now gen-profiles.path
-python3 "$SRC/gen_profiles.py"
+python3 -I "$SRC/gen_profiles.py"
 echo
 echo "Listo. Ctrl+F5 en el navegador (el servidor deja que el navegador guarde los plugins hasta una hora)."
 echo "Para quitarlo: sudo bash ~/profile_jump-uninstall.sh"

@@ -35,7 +35,7 @@ CRON=${CRON:-/etc/cron.d}
 chmod 755 "$SRC/meteo_copia.py"
 install -m 644 "$SRC/meteo_letrero.cron" "$CRON/meteo_letrero"
 echo "Tarea de cada minuto instalada: $CRON/meteo_letrero"
-python3 "$SRC/meteo_copia.py" || echo "Aviso: ahora no se ha podido leer el tiempo de la Raspberry"
+python3 -I "$SRC/meteo_copia.py" || echo "Aviso: ahora no se ha podido leer el tiempo de la Raspberry"
 echo
 echo "Listo. Ctrl+F5 en el navegador (el servidor deja que el navegador guarde los plugins hasta una hora)."
 echo "Para quitarlo: sudo bash ~/meteo_letrero-uninstall.sh"

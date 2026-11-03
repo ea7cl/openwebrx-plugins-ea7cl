@@ -13,7 +13,7 @@ AQUI=$(cd "$(dirname "$0")/.." && pwd)
 TS=$(date +%Y-%m-%d-%H%M)
 
 # Donde esta instalado OpenWebRX (sin importarlo)
-OWRX=$(python3 -c "import importlib.util, os; print(os.path.dirname(importlib.util.find_spec('owrx').origin))" 2>/dev/null || true)
+OWRX=$(python3 -I -c "import importlib.util, os; print(os.path.dirname(importlib.util.find_spec('owrx.connection').origin))" 2>/dev/null || true)
 if [ -z "$OWRX" ] || [ ! -f "$OWRX/connection.py" ]; then
     echo "No se encuentra OpenWebRX (owrx/connection.py). Este instalador es para el paquete de OpenWebRX+, no para Docker." >&2
     exit 1

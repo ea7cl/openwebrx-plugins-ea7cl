@@ -1,1 +1,1 @@
-* * * * * root /usr/bin/python3 /home/ea7cl/meteo_copia.py
+* * * * * root /usr/bin/python3 -I /home/ea7cl/meteo_copia.py

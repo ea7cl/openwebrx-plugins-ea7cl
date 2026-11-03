@@ -8,7 +8,7 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-OWRX=$(python3 -c "import importlib.util, os; print(os.path.dirname(importlib.util.find_spec('owrx').origin))")
+OWRX=$(python3 -I -c "import importlib.util, os; print(os.path.dirname(importlib.util.find_spec('owrx.connection').origin))")
 HT=$(dirname "$OWRX")/htdocs/plugins/receiver
 
 sed -i -e '/^from owrx.contador import ContadorThread$/d' -e '/^\s*ContadorThread.getSharedInstance().add_client(self)$/d' "$OWRX/connection.py"

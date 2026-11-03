@@ -40,7 +40,7 @@ if [ -f /home/ea7cl/gen_memorias.py ]; then
     install -m 644 "/home/ea7cl/$U.path" "/home/ea7cl/$U.service" /etc/systemd/system/
     systemctl daemon-reload
     systemctl enable --now "$U.path"
-    python3 /home/ea7cl/gen_memorias.py
+    python3 -I /home/ea7cl/gen_memorias.py
     echo "Vigilante activo: $U.path (regenera $D/scan_recordado/memorias.json)"
 fi
 

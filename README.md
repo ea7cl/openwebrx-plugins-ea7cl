@@ -9,6 +9,18 @@ Desarrollos para el receptor OpenWebRX+ de EA7CL (Málaga). Cada desarrollo va e
 | [`listeners/`](listeners/) | LST: oyentes en directo (plugin de 0xAF) con las modificaciones EA7CL. | ver [CHANGELOG](listeners/CHANGELOG.md) |
 | [`contador/`](contador/) | Contador de visitas propio (visitas, únicos y países) en la cabecera, sin servicios externos. Instalación genérica para cualquier OpenWebRX+ en su [README](contador/README.md). | ver [CHANGELOG](contador/CHANGELOG.md) |
 | [`scan_recordado/`](scan_recordado/) | Botón MEM: cada oyente elige qué memorias ve y cuáles entran en el SCAN, y se recuerda al volver a abrir el SDR. | ver [CHANGELOG](scan_recordado/CHANGELOG.md) |
+| [`rig_skin_es/`](rig_skin_es/) | Traduce al español los textos de rig_skin. | ver [CHANGELOG](rig_skin_es/CHANGELOG.md) |
+| [`rig_colores_ea7cl/`](rig_colores_ea7cl/) | Colores y tamaños de letra propios del aspecto rig_skin. | ver [CHANGELOG](rig_colores_ea7cl/CHANGELOG.md) |
+| [`rig_volumen_ea7cl/`](rig_volumen_ea7cl/) | Barra de volumen en el frontal de rig_skin. | ver [CHANGELOG](rig_volumen_ea7cl/CHANGELOG.md) |
+| [`rig_dx_spotter/`](rig_dx_spotter/) | Mejoras de la ventana DX CLUSTER: quién anuncia, filtro Europa, banda, comentarios y colores por modo. | ver [CHANGELOG](rig_dx_spotter/CHANGELOG.md) |
+| [`rig_zoom/`](rig_zoom/) | Escala del panel de rig_skin (ahora no se carga). | ver [CHANGELOG](rig_zoom/CHANGELOG.md) |
+| [`profile_jump/`](profile_jump/) | Cambia al perfil que cubre la frecuencia pedida (DX cluster, MEM…), con su generador de `profiles.json`. | ver [CHANGELOG](profile_jump/CHANGELOG.md) |
+| [`perfil_recordado/`](perfil_recordado/) | Cada navegador vuelve a su último perfil, frecuencia y modo, también tras un corte. | ver [CHANGELOG](perfil_recordado/CHANGELOG.md) |
+| [`smeter_bandas/`](smeter_bandas/) | Corrige la lectura del S-meter en perfiles que marcan de más (27, 28, 50 MHz…). | ver [CHANGELOG](smeter_bandas/CHANGELOG.md) |
+| [`meteo_letrero/`](meteo_letrero/) | Letrero con el tiempo de la estación Davis, con su tarea de cada minuto. | ver [CHANGELOG](meteo_letrero/CHANGELOG.md) |
+| [`mi_ip/`](mi_ip/) | Tarjeta en la cabecera con la IP, país, ciudad, navegador e idioma del oyente. | ver [CHANGELOG](mi_ip/CHANGELOG.md) |
+| [`banderas_emoji/`](banderas_emoji/) | Banderas emoji en Chrome y Edge de Windows. | ver [CHANGELOG](banderas_emoji/CHANGELOG.md) |
+| [`anti_iframe/`](anti_iframe/) | Aviso si otra web muestra el receptor incrustado sin permiso. | ver [CHANGELOG](anti_iframe/CHANGELOG.md) |
 | [`copia_owrx/`](copia_owrx/) | Copia completa de lo personalizado y actualización de OpenWebRX+ que lo conserva. Instrucciones en [LEEME.txt](copia_owrx/LEEME.txt). | — |
 
 Cada carpeta tiene su **instalador**, su **explicación** (README) y su **desinstalador**. Los desinstaladores

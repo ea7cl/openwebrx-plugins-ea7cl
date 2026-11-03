@@ -1,0 +1,6 @@
+[Unit]
+Description=EA7CL: regenera la lista de perfiles de profile_jump
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 3
+ExecStart=/usr/bin/python3 /home/ea7cl/gen_profiles.py

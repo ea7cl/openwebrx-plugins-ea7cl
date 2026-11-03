@@ -1,0 +1,6 @@
+[Unit]
+Description=EA7CL: vigila cambios en los perfiles de OpenWebRX+
+[Path]
+PathChanged=/var/lib/openwebrx/settings.json
+[Install]
+WantedBy=multi-user.target

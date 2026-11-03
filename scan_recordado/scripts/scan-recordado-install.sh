@@ -1,5 +1,5 @@
 #!/bin/bash
-# Instala o actualiza el plugin scan_recordado (marcas de scan recordadas por navegador) con copias de seguridad previas
+# Instala o actualiza el plugin scan_recordado (ventana MEM, recordada por navegador) con copias de seguridad previas
 set -e
 D=/usr/lib/python3/dist-packages/htdocs/plugins/receiver
 TS=$(date +%Y-%m-%d-%H%M)
@@ -32,6 +32,19 @@ else
     echo "Añadida a init.js, debajo de toggle_scannable: Plugins.load('scan_recordado');"
 fi
 
+# lista completa de memorias para el buscador, regenerada cada vez que
+# cambian los marcadores (gen_memorias.py se queda en /home/ea7cl, como gen_profiles.py)
+U=scan-recordado-memorias
+if [ -f /home/ea7cl/gen_memorias.py ]; then
+    chmod 755 /home/ea7cl/gen_memorias.py
+    install -m 644 "/home/ea7cl/$U.path" "/home/ea7cl/$U.service" /etc/systemd/system/
+    systemctl daemon-reload
+    systemctl enable --now "$U.path"
+    python3 /home/ea7cl/gen_memorias.py
+    echo "Vigilante activo: $U.path (regenera $D/scan_recordado/memorias.json)"
+fi
+
 echo
 echo "Para volver atras:"
+echo "  sudo systemctl disable --now $U.path; sudo rm -f /etc/systemd/system/$U.path /etc/systemd/system/$U.service; sudo systemctl daemon-reload"
 echo "  sudo cp -a $D/init.js.bak-$TS $D/init.js && sudo rm -r $D/scan_recordado"

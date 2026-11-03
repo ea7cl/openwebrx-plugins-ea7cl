@@ -67,6 +67,7 @@ no desde internet, así que tampoco cambia sola si 0xAF publica otra versión.
 | `plugin/listeners.js` | El plugin. |
 | `plugin/listeners.css` | Sus estilos. |
 | `scripts/listeners-install.sh` | Instala o actualiza: copia de seguridad de la carpeta del servidor y copia los dos ficheros. |
+| `scripts/listeners-uninstall.sh` | Desinstala: quita la carga y la configuración de `init.js` y aparta la carpeta, con copia de todo. |
 | `prueba/prueba.html` | Simulación sin servidor: nombres traducidos y cambio de perfil. Se abre con `servir.ps1` en http://localhost:8765/listeners/prueba/prueba.html; todas las líneas deben salir «OK». |
 
 ## Configuración en `init.js` del servidor
@@ -93,3 +94,14 @@ ssh -t openwebrx 'sudo bash ~/listeners-install.sh'
 ```
 
 Después, recarga la página del receptor (Ctrl+F5).
+
+## Desinstalar
+
+```bash
+scp listeners/scripts/listeners-uninstall.sh openwebrx:~/
+ssh -t openwebrx 'sudo bash ~/listeners-uninstall.sh'
+```
+
+Quita de `init.js` la carga de listeners y todo su bloque `setup({...})`, y aparta la carpeta del plugin.
+No borra nada: guarda `init.js` y la carpeta en `/home/ea7cl/desinstalado-listeners-FECHA` y al terminar
+dice la orden para volver a ponerlo. Los datos de oyentes en Supabase no se tocan.

@@ -30,6 +30,7 @@ SHA-256 `ff90fa80757c796479a9721e328d8d4722a7744b7b5a1e292017b896dadc3f86`).
 |---|---|
 | `botones_ea7cl.js` | El plugin. |
 | `scripts/botones-install.sh` | Instala o actualiza: copia de `init.js` (y del plugin si ya existía), copia el plugin y añade `Plugins.load('botones_ea7cl');` a `init.js` si falta. |
+| `scripts/botones-uninstall.sh` | Desinstala: quita la línea de `init.js` y aparta la carpeta, con copia de todo. |
 
 ## Instalar o reinstalar
 
@@ -38,8 +39,14 @@ scp botones_ea7cl/botones_ea7cl.js botones_ea7cl/scripts/botones-install.sh open
 ssh -t openwebrx 'sudo bash ~/botones-install.sh'
 ```
 
-## Volver atrás
+## Desinstalar
 
 ```bash
-sudo cp -a /usr/lib/python3/dist-packages/htdocs/plugins/receiver/init.js.bak-2026-10-24-2314 /usr/lib/python3/dist-packages/htdocs/plugins/receiver/init.js && sudo rm -r /usr/lib/python3/dist-packages/htdocs/plugins/receiver/botones_ea7cl
+scp botones_ea7cl/scripts/botones-uninstall.sh openwebrx:~/
+ssh -t openwebrx 'sudo bash ~/botones-uninstall.sh'
 ```
+
+Quita de `init.js` la línea de botones_ea7cl y aparta la carpeta del plugin; los botones vuelven al aspecto
+de cada plugin. No borra nada: guarda `init.js` y la carpeta en `/home/ea7cl/desinstalado-botones_ea7cl-FECHA`
+y al terminar dice la orden para volver a ponerlo. No uses la copia antigua de `init.js` del 24-oct para
+quitarlo: se perderían los plugins añadidos después.

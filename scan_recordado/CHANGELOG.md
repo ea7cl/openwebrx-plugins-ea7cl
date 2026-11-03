@@ -1,5 +1,11 @@
 # Historial de scan_recordado
 
+## v1.2 — 3-nov-2026
+- El buscador de MEM encuentra memorias de otros perfiles y, al pulsarlas, cambia de perfil
+  y las sintoniza (con profile_jump). Una letra busca por inicial; más letras, por contenido.
+- `gen_memorias.py` y el vigilante `scan-recordado-memorias.path` mantienen al día la lista
+  completa cada vez que cambian los marcadores del servidor.
+
 ## v1.1 — 3-nov-2026
 - Botón MEM con la ventana «Memorias»: casillas Ver y Scan por memoria, búsqueda,
   sintonizar pulsando el nombre, y botones Ver todas, Scan todas, Scan ninguna y Restaurar.

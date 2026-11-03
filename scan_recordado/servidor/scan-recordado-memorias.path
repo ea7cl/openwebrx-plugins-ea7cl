@@ -1,0 +1,7 @@
+[Unit]
+Description=EA7CL: vigila cambios en los marcadores de OpenWebRX+
+[Path]
+PathChanged=/var/lib/openwebrx/bookmarks.json
+PathChanged=/etc/openwebrx/bookmarks.d
+[Install]
+WantedBy=multi-user.target

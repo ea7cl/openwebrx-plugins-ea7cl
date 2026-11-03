@@ -1,0 +1,6 @@
+[Unit]
+Description=EA7CL: regenera la lista de memorias del buscador MEM
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 2
+ExecStart=/usr/bin/python3 /home/ea7cl/gen_memorias.py

@@ -132,7 +132,8 @@ Para **empezar de cero**: `sudo systemctl stop openwebrx`, borra los dos fichero
 sudo bash contador/scripts/contador-uninstall.sh
 ```
 
-Quita las dos líneas de `connection.py`, el módulo, el plugin, la línea de `init.js` y la tarea mensual.
+Quita las dos líneas de `connection.py`, el módulo, el plugin, la línea de `init.js` (aunque lleve un
+comentario detrás) y la tarea mensual.
 Los datos de `/var/lib/openwebrx/` se conservan por si se vuelve a instalar.
 
 ## Archivos

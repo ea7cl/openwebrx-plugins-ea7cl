@@ -13,7 +13,8 @@ HT=$(dirname "$OWRX")/htdocs/plugins/receiver
 
 sed -i -e '/^from owrx.contador import ContadorThread$/d' -e '/^\s*ContadorThread.getSharedInstance().add_client(self)$/d' "$OWRX/connection.py"
 rm -f "$OWRX/contador.py" /etc/cron.monthly/contador-geoip
-[ -f "$HT/init.js" ] && sed -i "/^Plugins.load('contador');$/d" "$HT/init.js"
+# la línea puede llevar un comentario detrás ("Plugins.load('contador');   // EA7CL: ...")
+[ -f "$HT/init.js" ] && sed -i -E "/^[[:space:]]*(\/\/[[:space:]]*)?Plugins\.load\('contador'\);/d" "$HT/init.js"
 rm -rf "$HT/contador"
 
 systemctl restart openwebrx

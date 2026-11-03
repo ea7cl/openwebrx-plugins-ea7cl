@@ -45,6 +45,7 @@ Cada versión estable queda marcada en Git con una etiqueta `autozoom-vX.Y`.
 | `init.js` | Línea que carga el plugin (ya añadida al `init.js` del servidor). |
 | `scripts/autozoom-install.sh` | Primera instalación: copia de `init.js`, carpeta del plugin y línea en `init.js`. |
 | `scripts/autozoom-update.sh` | Actualización: copia del plugin instalado en `~/autozoom.js.bak-FECHA` y sustitución. |
+| `scripts/autozoom-uninstall.sh` | Desinstala: quita la línea de `init.js` y aparta la carpeta, con copia de todo. |
 | `simulacion/index.html` | Simulación con tus perfiles, sin tocar el receptor. |
 | `../servir.ps1` | Servidor local (localhost:8765) para abrir la simulación. |
 | `CHANGELOG.md` | Historial de versiones. |
@@ -78,12 +79,23 @@ Cada versión estable queda marcada en Git con una etiqueta `autozoom-vX.Y`.
 
 ## Volver atrás
 
+A la versión anterior del plugin (v1.5):
+
 ```bash
-# a la versión anterior del plugin (v1.5)
 sudo cp /home/ea7cl/autozoom.js.bak-2026-10-25-0109 /usr/lib/python3/dist-packages/htdocs/plugins/receiver/autozoom/autozoom.js
-# quitar el plugin del todo
-sudo cp /usr/lib/python3/dist-packages/htdocs/plugins/receiver/init.js.bak-2026-10-23-1917 /usr/lib/python3/dist-packages/htdocs/plugins/receiver/init.js && sudo rm -r /usr/lib/python3/dist-packages/htdocs/plugins/receiver/autozoom
 ```
+
+## Desinstalar
+
+```bash
+scp autozoom/scripts/autozoom-uninstall.sh openwebrx:~/
+ssh -t openwebrx 'sudo bash ~/autozoom-uninstall.sh'
+```
+
+Quita de `init.js` la línea de autozoom (aunque esté comentada) y aparta la carpeta del plugin.
+No borra nada: guarda `init.js` y la carpeta en `/home/ea7cl/desinstalado-autozoom-FECHA` y al terminar
+dice la orden para volver a ponerlo. No uses las copias antiguas de `init.js` para quitarlo: se perderían
+los plugins añadidos después.
 
 ## Pendiente / ideas
 

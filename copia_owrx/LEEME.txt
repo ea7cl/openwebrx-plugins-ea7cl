@@ -82,5 +82,9 @@ Todo está en /home/ea7cl/owrx-personalizado. Entrar al servidor:  ssh openwebrx
 Notas
  - Doppler y toggle_scannable se cargan desde internet (0xAF) y cambian sin actualizar nada.
  - Los archivos de este sistema están en el repositorio openwebrx-plugins-ea7cl, carpeta
-   copia_owrx/. Para instalarlos de nuevo en el servidor:
-    scp copia_owrx/*.sh copia_owrx/LEEME.txt openwebrx:/home/ea7cl/owrx-personalizado/
+   copia_owrx/. Para instalarlos de nuevo en el servidor (guarda los anteriores como .bak-FECHA):
+    scp copia_owrx/*.sh copia_owrx/LEEME.txt openwebrx:~/
+    ssh -t openwebrx 'sudo bash ~/copia-owrx-install.sh'
+ - Para desinstalarlos (no toca OpenWebRX+ ni borra las copias hechas; aparta los scripts
+   en owrx-personalizado/desinstalado-FECHA y dice cómo volver a ponerlos):
+    ssh -t openwebrx 'sudo bash ~/copia-owrx-uninstall.sh'

@@ -11,6 +11,10 @@ Desarrollos para el receptor OpenWebRX+ de EA7CL (Málaga). Cada desarrollo va e
 | [`scan_recordado/`](scan_recordado/) | Botón MEM: cada oyente elige qué memorias ve y cuáles entran en el SCAN, y se recuerda al volver a abrir el SDR. | ver [CHANGELOG](scan_recordado/CHANGELOG.md) |
 | [`copia_owrx/`](copia_owrx/) | Copia completa de lo personalizado y actualización de OpenWebRX+ que lo conserva. Instrucciones en [LEEME.txt](copia_owrx/LEEME.txt). | — |
 
+Cada carpeta tiene su **instalador**, su **explicación** (README) y su **desinstalador**. Los desinstaladores
+no borran nada: guardan `init.js` y el plugin en `/home/ea7cl/desinstalado-<plugin>-FECHA` y al terminar
+dicen la orden para volver a ponerlo.
+
 Las versiones estables se marcan con etiquetas `<carpeta>-vX.Y` (por ejemplo `autozoom-v1.0`).
 
 `servir.ps1` sirve el repositorio en http://localhost:8765/ para abrir las simulaciones

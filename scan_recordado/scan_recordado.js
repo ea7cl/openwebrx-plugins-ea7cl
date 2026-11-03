@@ -8,6 +8,10 @@
  *    quita el scan; antes se perdía al recargar, ahora se recuerda.
  *  - Botón MEM: ventana con las memorias del perfil y dos casillas, Ver y
  *    Scan. Una memoria oculta desaparece del waterfall y del scan.
+ *  - El buscador de la ventana también encuentra memorias de otros perfiles
+ *    (memorias.json, que genera gen_memorias.py en el servidor cada vez que
+ *    cambian los marcadores); al pulsar una, profile_jump cambia de perfil
+ *    y la sintoniza.
  * Todo se guarda solo en el navegador del oyente (localStorage), así que
  * cada uno tiene su propia lista sin afectar a los demás.
  *
@@ -16,7 +20,7 @@
  */
 
 Plugins.scan_recordado.no_css = true;
-Plugins.scan_recordado._version = 1.1;
+Plugins.scan_recordado._version = 1.2;
 
 Plugins.scan_recordado._clave = 'ea7_scan_recordado';
 Plugins.scan_recordado._claveOcultas = 'ea7_mem_ocultas';
@@ -30,6 +34,35 @@ Plugins.scan_recordado.ORIGENES = {
 
 // listas completas tal como llegan, antes de quitar las ocultas
 Plugins.scan_recordado._todas = {};
+
+// todas las memorias del servidor, de cualquier perfil (memorias.json)
+Plugins.scan_recordado.URL_MEMORIAS = 'static/plugins/receiver/scan_recordado/memorias.json';
+Plugins.scan_recordado.MAX_OTRAS = 60;
+Plugins.scan_recordado._globales = [];
+Plugins.scan_recordado._otras = [];
+
+// se pide cada vez que se abre la ventana; si no ha cambiado, el servidor
+// contesta "sin cambios" y no se descarga de nuevo
+Plugins.scan_recordado._cargarGlobales = function () {
+    var me = this;
+    fetch(this.URL_MEMORIAS, { cache: 'no-cache' }).then(function (r) {
+        return r.ok ? r.json() : [];
+    }).then(function (lista) {
+        me._globales = Array.isArray(lista) ? lista : [];
+        me._pintar();
+    }).catch(function () {});
+};
+
+// una letra: memorias que empiezan por ella; más letras: que la contengan
+Plugins.scan_recordado._encaja = function (nombre, texto) {
+    if (!texto) return true;
+    nombre = String(nombre).toLowerCase();
+    return texto.length === 1 ? nombre.indexOf(texto) === 0 : nombre.indexOf(texto) >= 0;
+};
+
+Plugins.scan_recordado._texto = function () {
+    return String($('#plugin-window-mem .ea7-mem__buscar').val() || '').trim().toLowerCase();
+};
 
 Plugins.scan_recordado._leer = function (clave) {
     try { return JSON.parse(localStorage.getItem(clave || this._clave) || 'null') || {}; } catch (e) { return {}; }
@@ -100,6 +133,11 @@ Plugins.scan_recordado._css =
     '.ea7-mem td.f{color:#9fd4ff;font-variant-numeric:tabular-nums;white-space:nowrap}' +
     '.ea7-mem td.m{color:#b9c3cb;font-size:11px;text-transform:uppercase}' +
     '.ea7-mem tr.oculta td.n,.ea7-mem tr.oculta td.f{opacity:.45}' +
+    '.ea7-mem td.p{color:#ffd166;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.ea7-mem tr.otra td.n,.ea7-mem tr.otra td.p{cursor:pointer}' +
+    '.ea7-mem tr.otra:hover td{background:#26303a}' +
+    '.ea7-mem tr.sinperfil td{opacity:.4;cursor:default}' +
+    '.ea7-mem__mas{padding:4px;color:#b9c3cb;font-size:12px;text-align:center}' +
     '.ea7-mem input[type=checkbox]{width:16px;height:16px;cursor:pointer}' +
     '.ea7-mem__pie{padding:4px 8px;background:#1b242c;color:#b9c3cb;font-size:12px}';
 
@@ -110,11 +148,12 @@ Plugins.scan_recordado._crearVentana = function () {
     Plugins.addButton('mem', 'MEM', function () {
         Plugins.toggleWindow('mem');
         me._pintar();
+        if ($('#plugin-window-mem').is(':visible')) me._cargarGlobales();
     });
     Plugins.addWindow('mem', 'Memorias',
         '<div class="ea7-mem">' +
             '<div class="ea7-mem__barra">' +
-                '<input type="search" class="ea7-mem__buscar" placeholder="Buscar memoria...">' +
+                '<input type="search" class="ea7-mem__buscar" placeholder="Buscar memoria, en este u otro perfil...">' +
                 '<button data-accion="ver">Ver todas</button>' +
                 '<button data-accion="scan">Scan todas</button>' +
                 '<button data-accion="noscan">Scan ninguna</button>' +
@@ -137,8 +176,17 @@ Plugins.scan_recordado._crearVentana = function () {
         me._redibujar(source);
     });
 
+    // memoria de otro perfil: cambiar a ese perfil y sintonizarla
+    $w.on('click', 'tr.otra', function () {
+        var b = me._otras[$(this).data('i')];
+        if (!b || !Plugins.profile_jump || $(this).hasClass('sinperfil')) return;
+        if (!Plugins.profile_jump.jump(Number(b.frequency), b.modulation) && window.UI && UI.tuneBookmark) {
+            UI.tuneBookmark(b);
+        }
+    });
+
     // pulsar el nombre sintoniza la memoria
-    $w.on('click', 'td.n', function () {
+    $w.on('click', 'tr[data-source] td.n', function () {
         var $tr = $(this).closest('tr');
         var b = me._todas[$tr.data('source')].lista[$tr.data('i')];
         if (window.UI && UI.tuneBookmark) UI.tuneBookmark(b);
@@ -172,7 +220,7 @@ Plugins.scan_recordado._crearVentana = function () {
 // memorias del perfil que encajan con la búsqueda, ordenadas por origen
 Plugins.scan_recordado._filas = function () {
     var me = this;
-    var texto = String($('#plugin-window-mem .ea7-mem__buscar').val() || '').toLowerCase();
+    var texto = this._texto();
     var filas = [];
     var origenes = Object.keys(this.ORIGENES);
     Object.keys(this._todas).forEach(function (s) { if (origenes.indexOf(s) < 0) origenes.push(s); });
@@ -180,7 +228,7 @@ Plugins.scan_recordado._filas = function () {
         var t = me._todas[source];
         if (!t) return;
         t.lista.forEach(function (b, i) {
-            if (texto && String(b.name).toLowerCase().indexOf(texto) < 0) return;
+            if (!me._encaja(b.name, texto)) return;
             filas.push({ source: source, b: b, i: i });
         });
     });
@@ -211,7 +259,47 @@ Plugins.scan_recordado._pintar = function () {
             '<td class="c"><input type="checkbox" data-col="scan"' + (f.b.scannable ? ' checked' : '') + '></td>' +
             '</tr>';
     });
-    $lista.html(html ? html + '</table>' : '<p style="padding:8px">No hay memorias en este perfil.</p>');
+    if (html) html += '</table>';
+    html += this._pintarOtras();
+    $lista.html(html || '<p style="padding:8px">No hay memorias que encajen.</p>');
+};
+
+// al buscar, las memorias de otros perfiles con el perfil que las cubre
+Plugins.scan_recordado._pintarOtras = function () {
+    var me = this;
+    var texto = this._texto();
+    this._otras = [];
+    if (!texto || !this._globales.length) return '';
+    var dentro = function (f) {
+        return typeof center_freq !== 'undefined' && typeof bandwidth !== 'undefined' &&
+            Math.abs(f - center_freq) < bandwidth / 2;
+    };
+    var pj = Plugins.profile_jump;
+    var total = 0;
+    this._globales.forEach(function (b) {
+        var f = Number(b.frequency);
+        if (dentro(f) || !me._encaja(b.name, texto)) return;
+        total++;
+        if (me._otras.length < me.MAX_OTRAS) me._otras.push(b);
+    });
+    if (!total) return '';
+    var esc = Utils.htmlEscape;
+    var html = '<table><tr><th>Otros perfiles</th><th></th><th></th><th>Perfil</th></tr>';
+    this._otras.forEach(function (b, i) {
+        var p = pj && pj.profiles && pj.profiles.length ? pj.find(Number(b.frequency)) : null;
+        html += '<tr class="otra' + (p ? '' : ' sinperfil') + '" data-i="' + i + '"' +
+            (p ? '' : ' title="Ningún perfil del receptor cubre esta frecuencia"') + '>' +
+            '<td class="n" title="' + esc(b.name) + '">' + esc(b.name) + '</td>' +
+            '<td class="f">' + (Number(b.frequency) / 1e6).toFixed(4) + '</td>' +
+            '<td class="m">' + esc(b.modulation || '') + '</td>' +
+            '<td class="p" title="' + esc(p ? p.name : '') + '">' + esc(p ? p.name : '—') + '</td>' +
+            '</tr>';
+    });
+    html += '</table>';
+    if (total > this._otras.length) {
+        html += '<div class="ea7-mem__mas">' + (total - this._otras.length) + ' más; escribe más letras para afinar.</div>';
+    }
+    return html;
 };
 
 Plugins.scan_recordado.init = function () {

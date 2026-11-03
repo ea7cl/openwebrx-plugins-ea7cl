@@ -79,6 +79,24 @@ Todo está en /home/ea7cl/owrx-personalizado. Entrar al servidor:  ssh openwebrx
     sudo systemctl restart openwebrx
 
 
+6) COPIA EN WINDOWS (fuera del servidor, por si falla el equipo entero)
+
+   En el Windows, desde la carpeta del repositorio:
+
+    powershell -ExecutionPolicy Bypass -File copia_owrx\traer-copias-a-windows.ps1
+
+   Trae a Documentos\copias-servidor-owrx la última copia de aquí (copia-FECHA.tar.gz,
+   con restaurar.sh y paquetes/) y la última copia diaria completa del segundo disco
+   (/mnt/copias, servidor-FECHA.tar.gz). Comprueba que llegan bien y guarda las 5 últimas.
+   Esas copias llevan usuarios y claves del receptor: NO se suben a git.
+
+   Para restaurar desde Windows, se suben de nuevo al servidor y se siguen los pasos 4)
+   o el LEEME de las copias diarias:
+    scp copia-FECHA.tar.gz openwebrx:/home/ea7cl/owrx-personalizado/
+    ssh openwebrx 'cd /home/ea7cl/owrx-personalizado && tar xzf copia-FECHA.tar.gz'
+    sudo bash /home/ea7cl/owrx-personalizado/copia-FECHA/restaurar.sh --prueba
+
+
 Notas
  - Doppler y toggle_scannable se cargan desde internet (0xAF) y cambian sin actualizar nada.
  - Los archivos de este sistema están en el repositorio openwebrx-plugins-ea7cl, carpeta

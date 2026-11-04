@@ -1,50 +1,74 @@
 #!/bin/bash
-# Instala el modo "Meshtastic Narrow" (EA7CL): Meshtastic a 62,5 kHz, SF7-9, para los modos
-# Narrow de 868 MHz (por ejemplo la red SFNarrow en 869,618 MHz).
-#   - añade el modo en OpenWebRX (modes.py, dsp.py, csdr/chain/lora.py), entre marcas EA7CL
+# Instala o actualiza el modo "Meshtastic Narrow" (EA7CL): Meshtastic a 62,5 kHz, SF7-9, para los
+# modos Narrow de 868 MHz (por ejemplo la red SFNarrow en 869,618 MHz).
+#   - añade el modo en OpenWebRX (modes.py, dsp.py, service/__init__.py, csdr/chain/lora.py),
+#     entre marcas EA7CL
 #   - plugin web meshtastic_narrow, para que se abra el panel de mensajes Meshtastic
 #   - memoria del servidor "Meshtastic SFNarrow" en 869,618 MHz con ese modo
-# Antes guarda todo lo que toca en /home/ea7cl/meshtastic_narrow-antes-FECHA. Si OpenWebRX no
-# arranca bien después, lo vuelve a dejar todo como estaba.
+#   - decodificación en segundo plano (como AIS o VDL2): frecuencia de servicio en el plan de
+#     bandas, el modo en los decodificadores de segundo plano y el receptor programado para
+#     volver solo al perfil de 869 MHz cuando no lo usa ningún oyente
+# Antes guarda todo lo que toca en /home/ea7cl/meshtastic_narrow-antes-FECHA (con restaurar.sh).
+# Si OpenWebRX no arranca bien después, lo vuelve a dejar todo como estaba.
 # Copiar antes al servidor:
-#   scp meshtastic_narrow/meshtastic_narrow.js meshtastic_narrow/servidor/meshtastic_narrow_parchear.py meshtastic_narrow/scripts/meshtastic_narrow-*.sh openwebrx:~/
+#   scp meshtastic_narrow/meshtastic_narrow.js meshtastic_narrow/servidor/meshtastic_narrow_*.py meshtastic_narrow/scripts/meshtastic_narrow-*.sh openwebrx:~/
 # Uso:  sudo bash ~/meshtastic_narrow-install.sh
-# Otra frecuencia o nombre:  sudo FREQ=869525000 NOMBRE="Meshtastic X" bash ~/meshtastic_narrow-install.sh
+# Variables:  FREQ=869618000  NOMBRE="Meshtastic SFNarrow"  RECEPTOR=00001001 (número de serie)
+#             SEGUNDO_PLANO=0 para no decodificar en segundo plano
 set -e
 if [ "$(id -u)" -ne 0 ]; then echo "Hay que ejecutarlo con sudo" >&2; exit 1; fi
 PY=${PY:-/usr/lib/python3/dist-packages}
 HT=$PY/htdocs/plugins/receiver
 SRC=${SRC:-/home/ea7cl}
 MARC=${MARC:-/var/lib/openwebrx/bookmarks.json}
-FREQ=${FREQ:-869618000}
+AJUSTES=${AJUSTES:-/var/lib/openwebrx/settings.json}
+ANTES=${ANTES:-/var/lib/openwebrx/meshtastic_narrow-antes.json}
+export FREQ=${FREQ:-869618000}
+export RECEPTOR=${RECEPTOR:-00001001}
+export AJUSTES ANTES
 NOMBRE=${NOMBRE:-Meshtastic SFNarrow}
+SEGUNDO_PLANO=${SEGUNDO_PLANO:-1}
 TS=$(date +%Y-%m-%d-%H%M%S)
 BK=${BK:-/home/ea7cl/meshtastic_narrow-antes-$TS}
-ARCH="owrx/modes.py owrx/dsp.py csdr/chain/lora.py"
+ARCH="owrx/modes.py owrx/dsp.py owrx/service/__init__.py csdr/chain/lora.py"
 
-for f in "$SRC/meshtastic_narrow.js" "$SRC/meshtastic_narrow_parchear.py"; do
+for f in "$SRC/meshtastic_narrow.js" "$SRC/meshtastic_narrow_parchear.py" "$SRC/meshtastic_narrow_config.py"; do
     [ -f "$f" ] || { echo "Falta $f (cópialo antes con scp)" >&2; exit 1; }
 done
 command -v lorarx >/dev/null || { echo "Falta lorarx (paquete dxlaprs-lora)" >&2; exit 1; }
 python3 -I -c "import meshtastic" 2>/dev/null || { echo "Falta python3-meshtastic" >&2; exit 1; }
 
-# 1) copia de todo lo que se va a tocar
-mkdir -p "$BK"
+# 1) copia de todo lo que se va a tocar, con su script para volver a ella
+mkdir -p "$BK/etc"
 for a in $ARCH; do mkdir -p "$BK/$(dirname "$a")"; cp -a "$PY/$a" "$BK/$a"; done
 cp -a "$HT/init.js" "$BK/init.js"
-[ -f "$MARC" ] && cp -a "$MARC" "$BK/bookmarks.json"
-echo "Copia de seguridad en $BK"
+cp -a "$MARC" "$BK/bookmarks.json"
+cp -a "$AJUSTES" "$BK/settings.json"
+cp -a /etc/openwebrx/bands*.json "$BK/etc/"
+[ -f "$ANTES" ] && cp -a "$ANTES" "$BK/meshtastic_narrow-antes.json"
+cat > "$BK/restaurar.sh" <<EOF
+#!/bin/bash
+# Deja OpenWebRX como estaba antes de instalar meshtastic_narrow el $TS
+set -e
+cd "\$(dirname "\$0")"
+systemctl stop openwebrx
+for a in $ARCH; do cp -a "\$a" "$PY/\$a"; done
+cp -a init.js "$HT/init.js"
+cp -a bookmarks.json "$MARC"
+cp -a settings.json "$AJUSTES"
+cp -a etc/bands*.json /etc/openwebrx/
+if [ -f meshtastic_narrow-antes.json ]; then cp -a meshtastic_narrow-antes.json "$ANTES"; else rm -f "$ANTES"; fi
+[ -d "$HT/meshtastic_narrow" ] && [ ! -f "$BK/plugin-estaba" ] && rm -rf "$HT/meshtastic_narrow"
+systemctl start openwebrx
+echo "Restaurado desde \$(pwd)"
+EOF
+[ -d "$HT/meshtastic_narrow" ] && touch "$BK/plugin-estaba"
+echo "Copia de seguridad en $BK (para volver a ella: sudo bash $BK/restaurar.sh)"
 
 volver() {
-        trap - ERR
+    trap - ERR
     echo "ALGO HA FALLADO: dejando todo como estaba..." >&2
-    systemctl stop openwebrx || true
-    for a in $ARCH; do cp -a "$BK/$a" "$PY/$a"; done
-    cp -a "$BK/init.js" "$HT/init.js"
-    [ -f "$BK/bookmarks.json" ] && cp -a "$BK/bookmarks.json" "$MARC"
-    rm -rf "$HT/meshtastic_narrow"
-    systemctl start openwebrx
-    echo "Restaurado desde $BK" >&2
+    bash "$BK/restaurar.sh" >&2
     exit 1
 }
 
@@ -66,8 +90,7 @@ else
 fi
 
 # 4) la memoria del servidor (con OpenWebRX parado, para que no la pise)
-if [ -f "$MARC" ]; then
-    FREQ="$FREQ" NOMBRE="$NOMBRE" MARC="$MARC" python3 -I - <<'EOF'
+NOMBRE="$NOMBRE" MARC="$MARC" python3 -I - <<'EOF'
 import json, os
 f = os.environ["MARC"]; freq = int(os.environ["FREQ"]); nombre = os.environ["NOMBRE"]
 lista = json.load(open(f, encoding="utf-8"))
@@ -82,9 +105,15 @@ else:
     os.replace(f + ".tmp-mn", f)
     print(f"Memoria añadida: {nombre} en {freq/1e6:.3f} MHz")
 EOF
+
+# 5) segundo plano
+if [ "$SEGUNDO_PLANO" = 1 ]; then
+    python3 -I "$SRC/meshtastic_narrow_config.py" poner
+else
+    echo "Sin segundo plano (SEGUNDO_PLANO=0)"
 fi
 
-# 5) arrancar y comprobar
+# 6) arrancar y comprobar
 systemctl start openwebrx
 # solo el registro de este arranque (al pararse, OpenWebRX escribe errores "Broken pipe" normales)
 ID=$(systemctl show -p InvocationID --value openwebrx)
@@ -99,8 +128,9 @@ if journalctl _SYSTEMD_INVOCATION_ID="$ID" | grep -qE "SyntaxError|ImportError|N
 fi
 trap - ERR
 
-/usr/bin/python3 -I "$SRC/meshtastic_narrow_parchear.py" ver "$PY"
+python3 -I "$SRC/meshtastic_narrow_parchear.py" ver "$PY"
+python3 -I "$SRC/meshtastic_narrow_config.py" ver
 echo
 echo "Listo. Ctrl+F5 en el navegador; el modo sale en DIG como \"Meshtastic Narrow\"."
 echo "Para quitarlo: sudo bash ~/meshtastic_narrow-uninstall.sh"
-echo "Para volver a esta copia a mano: sudo bash -c 'systemctl stop openwebrx; cp -a $BK/owrx/* $PY/owrx/; cp -a $BK/csdr/chain/lora.py $PY/csdr/chain/; cp -a $BK/init.js $HT/; cp -a $BK/bookmarks.json $MARC; systemctl start openwebrx'"
+echo "Para volver a como estaba justo antes: sudo bash $BK/restaurar.sh"

@@ -2,9 +2,11 @@
 # meshtastic_narrow (EA7CL): añade o quita en OpenWebRX+ el modo "Meshtastic Narrow"
 # (Meshtastic a 62,5 kHz, SF7-9, para los modos Narrow de la banda de 868 MHz).
 #
-# Toca tres archivos de OpenWebRX. Cada trozo añadido va entre dos marcas
-# "# EA7CL meshtastic_narrow (inicio)" y "(fin)", así que quitarlo deja el archivo
-# exactamente como estaba. Si ya está puesto, no lo vuelve a poner.
+# Toca cuatro archivos de OpenWebRX: la lista de modos, el decodificador, quién lo arranca
+# para un oyente (dsp.py) y quién lo arranca en segundo plano (service/__init__.py).
+# Cada trozo añadido va entre dos marcas "# EA7CL meshtastic_narrow (inicio)" y "(fin)",
+# así que quitarlo deja el archivo exactamente como estaba. Si ya está puesto, no lo
+# duplica: pone la versión de este archivo en lugar de la que hubiera.
 #
 # Uso:  python3 -I meshtastic_narrow_parchear.py poner|quitar|ver [carpeta de dist-packages]
 import os, sys
@@ -23,9 +25,15 @@ CAMBIOS = [
             bandpass=None,
             ifRate=1000000,
             requirements=["meshtastic"],
-            service=False,
+            service=True,
             squelch=True
         ),
+'''),
+    ("owrx/service/__init__.py",
+     '        elif mod == "meshcore":\n',
+     '''        elif mod == "meshtastic-narrow":
+            from csdr.chain.lora import MeshtasticNarrowDemodulator
+            return MeshtasticNarrowDemodulator(service=True)
 '''),
     ("owrx/dsp.py",
      '        elif mod == "meshcore":\n',
@@ -51,13 +59,28 @@ def sangria(antes):
     return antes[:len(antes) - len(antes.lstrip(" "))] if antes else ""
 
 
+def sin_trozo(t):
+    # el archivo sin lo que haya entre las marcas (para poner la versión nueva encima de una vieja)
+    fuera, dentro = [], False
+    for l in t.split("\n"):
+        if l.strip() == INI:
+            dentro = True
+            continue
+        if l.strip() == FIN and dentro:
+            dentro = False
+            continue
+        if not dentro:
+            fuera.append(l)
+    return "\n".join(fuera)
+
+
 def poner(base):
     for rel, ancla, trozo in CAMBIOS:
         f = os.path.join(base, rel)
-        t = open(f, encoding="utf-8").read()
-        if INI in t:
-            print(f"ya estaba: {rel}")
-            continue
+        orig = t = open(f, encoding="utf-8").read()
+        habia = INI in t
+        if habia:
+            t = sin_trozo(t)
         if ancla is None:
             nuevo = t.rstrip("\n") + "\n\n" + INI + trozo + FIN + "\n"
         else:
@@ -65,33 +88,26 @@ def poner(base):
                 sys.exit(f"ERROR: en {rel} no encuentro una sola vez el sitio donde insertar; no se toca nada más")
             s = sangria(ancla)
             nuevo = t.replace(ancla, s + INI + "\n" + trozo + s + FIN + "\n" + ancla)
+        if nuevo == orig:
+            print(f"ya estaba: {rel}")
+            continue
         compile(nuevo, f, "exec")  # que siga siendo Python válido
         tmp = f + ".tmp-mn"
         with open(tmp, "w", encoding="utf-8") as o:
             o.write(nuevo)
         os.chmod(tmp, os.stat(f).st_mode)
         os.replace(tmp, f)
-        print(f"añadido: {rel}")
+        print(f"{'actualizado' if habia else 'añadido'}: {rel}")
 
 
 def quitar(base):
     for rel, _, _ in CAMBIOS:
         f = os.path.join(base, rel)
-        lineas = open(f, encoding="utf-8").read().split("\n")
-        fuera, dentro = [], False
-        for l in lineas:
-            if l.strip() == INI:
-                dentro = True
-                continue
-            if l.strip() == FIN and dentro:
-                dentro = False
-                continue
-            if not dentro:
-                fuera.append(l)
-        nuevo = "\n".join(fuera)
+        orig = open(f, encoding="utf-8").read()
+        nuevo = sin_trozo(orig)
         if rel.endswith("lora.py"):
             nuevo = nuevo.rstrip("\n") + "\n"
-        if nuevo == "\n".join(lineas):
+        if INI not in orig:
             print(f"no estaba: {rel}")
             continue
         compile(nuevo, f, "exec")

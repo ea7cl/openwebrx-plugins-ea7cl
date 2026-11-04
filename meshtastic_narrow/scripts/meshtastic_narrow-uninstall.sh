@@ -1,9 +1,11 @@
 #!/bin/bash
 # Desinstala el modo "Meshtastic Narrow" (EA7CL).
-# Quita de modes.py, dsp.py y csdr/chain/lora.py solo lo que hay entre las marcas EA7CL,
-# el plugin web, su línea de init.js y la memoria "meshtastic-narrow" del servidor.
+# Quita de modes.py, dsp.py, service/__init__.py y csdr/chain/lora.py solo lo que hay entre las
+# marcas EA7CL, el plugin web, su línea de init.js, la memoria "meshtastic-narrow" del servidor
+# y la decodificación en segundo plano (frecuencia de servicio del plan de bandas, el modo en
+# los decodificadores de segundo plano; el receptor vuelve a como estaba antes de instalar).
 # No borra nada: guarda antes todo en /home/ea7cl/desinstalado-meshtastic_narrow-FECHA.
-# No toca el receptor ni el perfil de 869 MHz que hayas creado.
+# No toca el perfil de 869 MHz que hayas creado.
 # Uso:  sudo bash ~/meshtastic_narrow-uninstall.sh
 set -e
 if [ "$(id -u)" -ne 0 ]; then echo "Hay que ejecutarlo con sudo" >&2; exit 1; fi
@@ -11,19 +13,27 @@ PY=${PY:-/usr/lib/python3/dist-packages}
 HT=$PY/htdocs/plugins/receiver
 SRC=${SRC:-/home/ea7cl}
 MARC=${MARC:-/var/lib/openwebrx/bookmarks.json}
+export AJUSTES=${AJUSTES:-/var/lib/openwebrx/settings.json}
+export ANTES=${ANTES:-/var/lib/openwebrx/meshtastic_narrow-antes.json}
 TS=$(date +%Y-%m-%d-%H%M%S)
 BK=${BK:-/home/ea7cl/desinstalado-meshtastic_narrow-$TS}
-ARCH="owrx/modes.py owrx/dsp.py csdr/chain/lora.py"
-[ -f "$SRC/meshtastic_narrow_parchear.py" ] || { echo "Falta $SRC/meshtastic_narrow_parchear.py (cópialo antes con scp)" >&2; exit 1; }
+ARCH="owrx/modes.py owrx/dsp.py owrx/service/__init__.py csdr/chain/lora.py"
+for f in "$SRC/meshtastic_narrow_parchear.py" "$SRC/meshtastic_narrow_config.py"; do
+    [ -f "$f" ] || { echo "Falta $f (cópialo antes con scp)" >&2; exit 1; }
+done
 
-mkdir -p "$BK"
+mkdir -p "$BK/etc"
 for a in $ARCH; do mkdir -p "$BK/$(dirname "$a")"; cp -a "$PY/$a" "$BK/$a"; done
 cp -a "$HT/init.js" "$BK/init.js"
 [ -f "$MARC" ] && cp -a "$MARC" "$BK/bookmarks.json"
+cp -a "$AJUSTES" "$BK/settings.json"
+cp -a /etc/openwebrx/bands*.json "$BK/etc/"
+[ -f "$ANTES" ] && cp -a "$ANTES" "$BK/"
 echo "Copia de seguridad en $BK"
 
 systemctl stop openwebrx
 python3 -I "$SRC/meshtastic_narrow_parchear.py" quitar "$PY"
+python3 -I "$SRC/meshtastic_narrow_config.py" quitar
 
 sed -i -E "/^[[:space:]]*(\/\/[[:space:]]*)?Plugins\.load\('meshtastic_narrow'\);/d" "$HT/init.js"
 echo "Quitada de init.js la carga de meshtastic_narrow"

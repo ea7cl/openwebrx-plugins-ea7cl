@@ -9,6 +9,7 @@ Desarrollos para el receptor OpenWebRX+ de EA7CL (Málaga). Cada desarrollo va e
 | [`listeners/`](listeners/) | LST: oyentes en directo (plugin de 0xAF) con las modificaciones EA7CL. | ver [CHANGELOG](listeners/CHANGELOG.md) |
 | [`contador/`](contador/) | Contador de visitas propio (visitas, únicos y países) en la cabecera, sin servicios externos. Instalación genérica para cualquier OpenWebRX+ en su [README](contador/README.md). | ver [CHANGELOG](contador/CHANGELOG.md) |
 | [`scan_recordado/`](scan_recordado/) | Botón MEM: cada oyente elige qué memorias ve y cuáles entran en el SCAN, y se recuerda al volver a abrir el SDR. | ver [CHANGELOG](scan_recordado/CHANGELOG.md) |
+| [`meshtastic_narrow/`](meshtastic_narrow/) | Modo Meshtastic Narrow (62,5 kHz, SF7-9) para la red SFNarrow de 869,618 MHz, junto al Meshtastic normal: mensajes en su panel y nodos en el mapa. | ver [CHANGELOG](meshtastic_narrow/CHANGELOG.md) |
 | [`rig_skin_es/`](rig_skin_es/) | Traduce al español los textos de rig_skin. | ver [CHANGELOG](rig_skin_es/CHANGELOG.md) |
 | [`rig_colores_ea7cl/`](rig_colores_ea7cl/) | Colores y tamaños de letra propios del aspecto rig_skin. | ver [CHANGELOG](rig_colores_ea7cl/CHANGELOG.md) |
 | [`rig_volumen_ea7cl/`](rig_volumen_ea7cl/) | Barra de volumen en el frontal de rig_skin. | ver [CHANGELOG](rig_volumen_ea7cl/CHANGELOG.md) |

@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+dablin (envoltorio de EA7CL) - /usr/local/bin/dablin
+
+OpenWebRX+ arranca "dablin -p -s SERVICIO" y espera el audio SIEMPRE a la
+misma frecuencia (la de Ajustes > Decodificacion > "DAB audio rate").
+Pero cada emisora DAB/DAB+ emite a la suya (32000 o 48000 Hz) y, si no
+coincide, se oye acelerada o lenta.
+
+Este envoltorio ejecuta el dablin de verdad, lee en sus mensajes a que
+frecuencia emite la emisora ("PCMOutput: format set; samplerate: N") y
+convierte el audio a la frecuencia que espera OpenWebRX+. Si ya coincide,
+lo deja pasar tal cual.
+
+Para quitarlo: rm /usr/local/bin/dablin   (vuelve a usarse el original)
+"""
+import os, sys, re, json, signal, threading, subprocess, struct
+from array import array
+
+SETTINGS = '/var/lib/openwebrx/settings.json'
+
+
+def frecuencia_destino():
+    # la misma que tenga OpenWebRX+ en "DAB audio rate" (por defecto 48000)
+    try:
+        with open(SETTINGS) as f:
+            v = int(json.load(f).get('dab_output_rate', 48000))
+            if v in (32000, 48000):
+                return v
+    except Exception:
+        pass
+    return 48000
+
+
+def dablin_real():
+    yo = os.path.realpath(__file__)
+    for d in os.environ.get('PATH', '/usr/bin:/bin').split(':') + ['/usr/bin', '/usr/local/bin']:
+        p = os.path.join(d, 'dablin')
+        if os.path.isfile(p) and os.access(p, os.X_OK) and os.path.realpath(p) != yo:
+            return p
+    sys.stderr.write('dablin (envoltorio): no encuentro el dablin original\n')
+    sys.exit(1)
+
+
+DESTINO = frecuencia_destino()
+estado = {'origen': None, 'canales': 2}
+
+
+def leer_errores(err):
+    patron = re.compile(r'samplerate:\s*(\d+),\s*channels:\s*(\d+)')
+    for linea in iter(err.readline, b''):
+        try:
+            texto = linea.decode('utf-8', 'replace')
+            m = patron.search(texto)
+            if m:
+                estado['origen'] = int(m.group(1))
+                estado['canales'] = int(m.group(2)) or 2
+                if estado['origen'] != DESTINO:
+                    texto = texto.rstrip('\n') + '  [EA7CL: se convierte a %d Hz]\n' % DESTINO
+            sys.stderr.write(texto)
+            sys.stderr.flush()
+        except Exception:
+            pass
+
+
+def main():
+    hijo = subprocess.Popen([dablin_real()] + sys.argv[1:],
+                            stdin=sys.stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def parar(*_):
+        try:
+            hijo.terminate()
+        except Exception:
+            pass
+        os._exit(0)
+    signal.signal(signal.SIGTERM, parar)
+    signal.signal(signal.SIGINT, parar)
+
+    threading.Thread(target=leer_errores, args=(hijo.stderr,), daemon=True).start()
+
+    salida = sys.stdout.buffer
+    resto = b''
+    pos = 0.0        # posicion fraccionaria dentro de la muestra anterior
+    previo = None    # ultima trama (lista de canales) del bloque anterior
+    try:
+        while True:
+            datos = hijo.stdout.read1(16384) if hasattr(hijo.stdout, 'read1') else os.read(hijo.stdout.fileno(), 16384)
+            if not datos:
+                break
+            origen, ch = estado['origen'], estado['canales']
+            if not origen or origen == DESTINO:
+                # misma frecuencia (o aun desconocida): pasa tal cual
+                salida.write(datos)
+                salida.flush()
+                continue
+            datos = resto + datos
+            tam = 4 * ch
+            util = len(datos) - (len(datos) % tam)
+            resto = datos[util:]
+            m = array('f')
+            m.frombytes(datos[:util])
+            n = len(m) // ch
+            if n == 0:
+                continue
+            # interpolacion lineal de "origen" a "DESTINO", trama a trama
+            paso = origen / float(DESTINO)
+            tramas = [m[i * ch:(i + 1) * ch] for i in range(n)]
+            if previo is not None:
+                tramas.insert(0, previo)
+            out = array('f')
+            total = len(tramas)
+            while pos + 1 < total:
+                i = int(pos)
+                fr = pos - i
+                a, b = tramas[i], tramas[i + 1]
+                for c in range(ch):
+                    out.append(a[c] + (b[c] - a[c]) * fr)
+                pos += paso
+            # guarda la ultima trama para enlazar con el siguiente bloque
+            pos -= (total - 1)
+            previo = tramas[-1]
+            salida.write(out.tobytes())
+            salida.flush()
+    except (BrokenPipeError, OSError):
+        pass
+    finally:
+        parar()
+
+
+if __name__ == '__main__':
+    main()

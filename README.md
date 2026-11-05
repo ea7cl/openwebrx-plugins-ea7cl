@@ -14,6 +14,9 @@ Desarrollos para el receptor OpenWebRX+ de EA7CL (Málaga). Cada desarrollo va e
 | [`rig_colores_ea7cl/`](rig_colores_ea7cl/) | Colores y tamaños de letra propios del aspecto rig_skin. | ver [CHANGELOG](rig_colores_ea7cl/CHANGELOG.md) |
 | [`rig_volumen_ea7cl/`](rig_volumen_ea7cl/) | Barra de volumen en el frontal de rig_skin. | ver [CHANGELOG](rig_volumen_ea7cl/CHANGELOG.md) |
 | [`rig_dx_spotter/`](rig_dx_spotter/) | Mejoras de la ventana DX CLUSTER: quién anuncia, filtro Europa, banda, comentarios y colores por modo. | ver [CHANGELOG](rig_dx_spotter/CHANGELOG.md) |
+| [`rig_skin/`](rig_skin/) | rig_skin 0.10.20 con los parches EA7CL, y sus scripts de actualización y parcheo. | 0.10.20 |
+| [`audio_dsp/`](audio_dsp/) | Analizador de espectro de audio, ecualizador paramétrico y filtros. | 2.4 |
+| [`servidor/`](servidor/) | `init.js` del servidor y scripts del sistema (dablin, filtro_detector, bloquear_redes). | — |
 | [`rig_zoom/`](rig_zoom/) | Escala del panel de rig_skin (ahora no se carga). | ver [CHANGELOG](rig_zoom/CHANGELOG.md) |
 | [`profile_jump/`](profile_jump/) | Cambia al perfil que cubre la frecuencia pedida (DX cluster, MEM…), con su generador de `profiles.json`. | ver [CHANGELOG](profile_jump/CHANGELOG.md) |
 | [`perfil_recordado/`](perfil_recordado/) | Cada navegador vuelve a su último perfil, frecuencia y modo, también tras un corte. | ver [CHANGELOG](perfil_recordado/CHANGELOG.md) |

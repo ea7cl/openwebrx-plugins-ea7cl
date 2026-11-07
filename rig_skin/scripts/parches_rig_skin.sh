@@ -58,3 +58,8 @@ echo -n "  QO-100 / 23 cm:     "; grep -c "EA7CL: frecuencias largas" "$CSS"
 # 4) DX: spots de V/UHF solo hasta 800 km (rig_skin trae 2000)
 sed -i 's/if (d !== null \&\& d > 2000) return;/if (d !== null \&\& d > 800) return;   \/\/ EA7CL: 800 km/' "$JS"
 echo -n "  DX V/UHF 800 km:    "; grep -c "d > 800) return;" "$JS"
+
+# 5) DX CLUSTER por https: dxsummit pedido con http:// se bloquea cuando el receptor
+#    se abre por https (puerto 8443). Con https:// funciona desde los dos.
+sed -i "s#'http://www.dxsummit.fi/#'https://www.dxsummit.fi/#g" "$JS"
+echo -n "  dxsummit por https: "; grep -c "'https://www.dxsummit.fi/" "$JS"

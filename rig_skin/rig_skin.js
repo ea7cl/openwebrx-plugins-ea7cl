@@ -1002,7 +1002,7 @@ Plugins.rig_skin.createDxWindow = function () {
         // history on every window toggle would fetch what we have
         if (Date.now() - backlogAt < 15 * 60 * 1000) return;
         backlogAt = Date.now();
-        $.getJSON('http://www.dxsummit.fi/api/v1/spots?limit=150')
+        $.getJSON('https://www.dxsummit.fi/api/v1/spots?limit=150')
             .done(function (d) {
                 $win.find('.owrx-rig-dx-src').text('HolyCluster + DXSummit');
                 addSpots((d || []).map(function (r) {

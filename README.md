@@ -25,6 +25,7 @@ Desarrollos para el receptor OpenWebRX+ de EA7CL (Málaga). Cada desarrollo va e
 | [`mi_ip/`](mi_ip/) | Tarjeta en la cabecera con la IP, país, ciudad, navegador e idioma del oyente. | ver [CHANGELOG](mi_ip/CHANGELOG.md) |
 | [`banderas_emoji/`](banderas_emoji/) | Banderas emoji en Chrome y Edge de Windows. | ver [CHANGELOG](banderas_emoji/CHANGELOG.md) |
 | [`anti_iframe/`](anti_iframe/) | Aviso si otra web muestra el receptor incrustado sin permiso. | ver [CHANGELOG](anti_iframe/CHANGELOG.md) |
+| [`https/`](https/) | El receptor también por https en el puerto 8443 (certificado gratuito de Let's Encrypt que se renueva solo); el 8073 sigue igual. | — |
 | [`copia_owrx/`](copia_owrx/) | Copia completa de lo personalizado y actualización de OpenWebRX+ que lo conserva. Instrucciones en [LEEME.txt](copia_owrx/LEEME.txt). | — |
 
 Cada carpeta tiene su **instalador**, su **explicación** (README) y su **desinstalador**. Los desinstaladores

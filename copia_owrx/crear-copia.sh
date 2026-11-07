@@ -69,7 +69,10 @@ echo "Config:      /etc/openwebrx y /var/lib/openwebrx"
 cp "$SRC/restaurar.sh" "$DEST/restaurar.sh"
 cp "$SRC/LEEME.txt" "$DEST/LEEME.txt" 2>/dev/null || true
 tar -czf "$DEST.tar.gz" -C "$BASE" "copia-$TS"
-chown -R ea7cl: "$BASE"
+# Solo lo necesario para traer las copias a Windows. Lo de dentro de cada copia conserva
+# su dueño (root, openwebrx...): si fuera de ea7cl, al volver atrás OpenWebRX no arranca.
+chown ea7cl: "$BASE" "$DEST.tar.gz"
+chown -R ea7cl: "$ALMACEN"
 
 echo
 echo "Copia de OpenWebRX+ $VER en $DEST"

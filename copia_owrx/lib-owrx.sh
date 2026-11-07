@@ -42,6 +42,16 @@ guardar_deb() {
 # Archivos de OpenWebRX+ cambiados a mano (sin la configuración de /etc, que se conserva sola)
 modificados() { dpkg --verify openwebrx | awk '$2 != "c" {print $NF}'; }
 
+# Deja en la carpeta $2 los dueños que tiene cada archivo en la copia $1 (hecha con cp -a);
+# lo que no está en la copia queda con el dueño $3. OpenWebRX no arranca si
+# /var/lib/openwebrx no es del usuario openwebrx.
+duenos_como() {
+    local ref=$1 dir=$2 def=$3 f
+    (cd "$dir" && find . -print0 | while IFS= read -r -d '' f; do
+        if [ -e "$ref/$f" ] || [ -L "$ref/$f" ]; then chown -h --reference="$ref/$f" "$f"; else chown -h "$def" "$f"; fi
+    done)
+}
+
 # Archivos añadidos a mano en las carpetas de OpenWebRX+ (plugins, imágenes...)
 propios() {
     find $P/htdocs $P/owrx -type f ! -path '*/__pycache__/*' ! -path '*.bak*' ! -name '*.orig' ! -name '*.antes-de-*' \

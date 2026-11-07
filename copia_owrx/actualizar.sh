@@ -38,6 +38,7 @@ combinar() {
     local e f mio viejo nuevo out
     CHOQUES=0
     : > "$W/resultado"
+    : > "$W/duenos"     # dueño de cada archivo tuyo, para dejarlo igual al ponerlo
     while read -r f; do
         mio=${RAIZ:-}$f; viejo=$W/viejo$f; nuevo=$W/nuevo$f; out=$W/combinados$f
         mkdir -p "$(dirname "$out")"
@@ -58,6 +59,7 @@ combinar() {
         if [ "$e" = combinado ] && ! python_correcto "$out"; then e=CHOQUE; fi
         [ "$e" = CHOQUE ] && CHOQUES=$((CHOQUES + 1))
         echo "$e|$f" >> "$W/resultado"
+        [ -e "$mio" ] && echo "$(stat -c %u:%g "$mio")|$f" >> "$W/duenos"
     done < "$W/lista"
 }
 
@@ -115,10 +117,14 @@ errores_python() {
 
 # Comprueba que OpenWebRX funciona y que están tus cambios. $1 = desde cuándo mirar el registro
 comprobar() {
-    local ok=1 i n e f
-    for i in $(seq 1 30); do
+    local ok=1 n e f limite
+    # Con todos los SDR y bases de datos tarda más de un minuto en responder: se espera hasta 5
+    limite=$((SECONDS + 300))
+    echo "  Esperando a que OpenWebRX responda (puede tardar un par de minutos)..."
+    while [ $SECONDS -lt $limite ]; do
         curl -fs -o /dev/null --max-time 5 "$URL" && break
-        sleep 2
+        systemctl is-failed -q openwebrx && break
+        sleep 3
     done
     systemctl is-active -q openwebrx || { echo "  FALLO: el servicio openwebrx no está en marcha"; ok=0; }
     curl -fs -o /dev/null --max-time 5 "$URL" || { echo "  FALLO: la página no responde en $URL"; ok=0; }
@@ -145,7 +151,7 @@ comprobar() {
 
 # Vuelve a las versiones, configuración y archivos de la copia $1
 volver() {
-    local C=$1 p v d desde paq=()
+    local C=$1 p v d desde paq=() A W=""
     echo
     echo "Volviendo a como estaba en $(basename "$C") (OpenWebRX+ $(cat "$C/version.txt"))"
     systemctl stop openwebrx
@@ -158,15 +164,19 @@ volver() {
         apt-get install --allow-downgrades "${APT[@]}" "${paq[@]}" || echo "  AVISO: apt-get no ha podido reinstalar todo"
     fi
     # la configuración de ese momento (la versión nueva puede haberla convertido a su formato)
-    mkdir -p "$BASE/antes-de-volver-$TS"
-    cp -a /etc/openwebrx /var/lib/openwebrx "$BASE/antes-de-volver-$TS/"
+    A=$BASE/antes-de-volver-$TS
+    mkdir -p "$A"
+    cp -a /etc/openwebrx "$A/etc-openwebrx"
+    cp -a /var/lib/openwebrx "$A/var-lib-openwebrx"
     rsync -a --delete "$C/config/etc-openwebrx/" /etc/openwebrx/
     rsync -a --delete "$C/config/var-lib-openwebrx/" /var/lib/openwebrx/
-    echo "  Configuración repuesta (la que había quedó en $BASE/antes-de-volver-$TS)"
+    # las copias antiguas tienen la configuración con dueño ea7cl: se dejan los dueños de antes
+    duenos_como "$A/etc-openwebrx" /etc/openwebrx root:root
+    duenos_como "$A/var-lib-openwebrx" /var/lib/openwebrx openwebrx:openwebrx
+    echo "  Configuración repuesta (la que había quedó en $A)"
     (cd "$C" && bash restaurar.sh) | grep -v '^Para que se aplique'
     desde=$(date '+%F %T')
     systemctl restart openwebrx
-    W=""
     comprobar "$desde"
 }
 
@@ -270,14 +280,20 @@ echo
 echo "4) Poniendo tus cambios"
 while IFS='|' read -r e f; do
     case $e in
-        igual|combinado|binario|CHOQUE) cp -a "$W/combinados$f" "$f"; echo "  puesto:   $f" ;;
+        igual|combinado|binario|CHOQUE)
+            cp -a "$W/combinados$f" "$f"
+            o=$(awk -F'|' -v f="$f" '$2 == f {print $1}' "$W/duenos" 2>/dev/null)
+            chown -h "${o:-root:root}" "$f"
+            echo "  puesto:   $f" ;;
         borrado) rm -f "$f"; echo "  borrado:  $f" ;;
     esac
 done < "$W/resultado"
 while read -r f; do
     cmp -s "$C/propios$f" "$f" && continue
     mkdir -p "$(dirname "$f")"
+    o=$(stat -c %u:%g "$f" 2>/dev/null || true)
     cp -a "$C/propios$f" "$f"
+    [ -z "$o" ] || chown -h "$o" "$f"
     echo "  repuesto: $f"
 done < "$W/propios"
 

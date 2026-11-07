@@ -11,7 +11,7 @@
  * a otra pulsando sobre el letrero (su navegador lo recuerda).
  */
 Plugins.meteo_letrero = Plugins.meteo_letrero || {};
-Plugins.meteo_letrero._version = 0.6;
+Plugins.meteo_letrero._version = 0.7;
 Plugins.meteo_letrero.no_css = true;
 
 // --- AJUSTES ---
@@ -20,6 +20,15 @@ Plugins.meteo_letrero.VELOCIDAD = 60;    // pixeles por segundo (menos = mas len
 Plugins.meteo_letrero.ALTO = 36;         // alto del letrero en pixeles
 Plugins.meteo_letrero.LETRA = 19;        // tamano de letra en pixeles
 Plugins.meteo_letrero.LUGAR = 'Nueva Málaga (Málaga), 73 msnm';
+
+// Pide a OpenWebRX que recoloque la cascada (el letrero le quita sitio). Espera
+// a que la cascada este montada: antes no existe la escala de frecuencias y
+// resize_scale() daba "Cannot read properties of undefined (reading 'style')".
+// Al montarse la cascada OpenWebRX ya mide todo, letrero incluido.
+Plugins.meteo_letrero._recolocar = function () {
+	if (typeof waterfall_setup_done !== 'undefined' && !waterfall_setup_done) return;
+	window.dispatchEvent(new Event('resize'));
+};
 
 Plugins.meteo_letrero._dec = function (v) {
 	v = String(v == null ? '' : v).trim();
@@ -99,7 +108,7 @@ Plugins.meteo_letrero._leer = function () {
 			var primera = !self.$caja.is(':visible');
 			self.$caja.show();
 			self._pintar();
-			if (primera) window.dispatchEvent(new Event('resize'));
+			if (primera) self._recolocar();
 		});
 };
 
@@ -138,7 +147,7 @@ Plugins.meteo_letrero.init = function () {
 	var $cinta = $('#openwebrx-frequency-container');
 	if ($cinta.length) this.$caja.insertBefore($cinta);
 	else this.$caja.prependTo('.openwebrx-waterfall-container');
-	setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 500);
+	setTimeout(function () { self._recolocar(); }, 500);
 
 	// el raton y los toques sobre el letrero son solo del letrero: que no
 	// lleguen a la cascada ni a la cinta (si no, mueven la cruz o cambian

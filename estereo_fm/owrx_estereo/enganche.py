@@ -10,6 +10,11 @@ logger = logging.getLogger("owrx_estereo")
 
 def aplicar_analog(g):
     """Al final de csdr/chain/analog.py: cambia WFm por la versión estéreo."""
+    if "BaseWFm" in g or "BCFm" in g:
+        # OpenWebRX+ 1.2.130 o posterior: otra cadena de FM (y ya trae el modo BCFM estéreo).
+        # Esta versión no sabe engancharse ahí: se deja la FM original intacta.
+        logger.warning("owrx-estereo: esta versión de OpenWebRX tiene otra cadena de FM; no se toca")
+        return
     from .fm import clase_wfm
     g["WFm"] = clase_wfm(g["WFm"])
 

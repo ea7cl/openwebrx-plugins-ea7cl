@@ -47,7 +47,9 @@ No toca la configuración de OpenWebRX (`/etc/openwebrx`, `/var/lib/openwebrx`).
 
 ## Llevarlo a otro servidor (por ejemplo, un Ubuntu)
 
-Sirve para OpenWebRX+ **instalado con apt** (paquete `openwebrx`), no para la versión en Docker.
+Sirve para OpenWebRX+ **instalado con apt** (paquete `openwebrx`), no para la versión en Docker,
+y **solo en versiones probadas (1.2.128)**. La 1.2.130 cambió la cadena de FM y trae su propio
+modo estéreo **BCFM**; ahí el script no aplica nada (hay que adaptarlo y probarlo antes).
 
 1. Copiar esta carpeta al servidor (por ejemplo, a `/tmp/owrx-estereo`).
 2. `bash owrx-estereo.sh estado` → debe decir dónde está OpenWebRX y "sin poner".

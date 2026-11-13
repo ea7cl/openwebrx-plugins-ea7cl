@@ -19,7 +19,13 @@
 # Copias de seguridad: /var/backups/owrx-estereo/<versión de OpenWebRX>/
 set -e
 ACCION="${1:-estado}"
-SILENCIOSO=""; [ "$2" = "--silencioso" ] && SILENCIOSO=1
+SILENCIOSO=""; FORZAR=""
+for a in "${@:2}"; do
+  case "$a" in --silencioso) SILENCIOSO=1;; --forzar) FORZAR=1;; esac
+done
+# Versiones de OpenWebRX+ en las que se ha probado. En otras NO se aplica (la 1.2.130 cambió la
+# cadena de FM y el enganche la rompería). --forzar lo aplica igualmente (solo para pruebas).
+PROBADAS="1.2.128"
 ORIGEN="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 # si se ejecuta la copia instalada, los archivos están en /usr/local/share/owrx-estereo
 [ -d "$ORIGEN/owrx_estereo" ] || ORIGEN=/usr/local/share/owrx-estereo
@@ -94,6 +100,15 @@ reiniciar() {
 case "$ACCION" in
   aplicar)
     [ "$(id -u)" = 0 ] || { echo "Usa: sudo bash $0 aplicar"; exit 1; }
+    if ! echo " $PROBADAS " | grep -q " $VER " && [ -z "$FORZAR" ]; then
+      if [ -n "$SILENCIOSO" ]; then
+        logger -t owrx-estereo "OpenWebRX $VER no probado: no se aplica el estéreo" 2>/dev/null || true
+        exit 0
+      fi
+      echo "OpenWebRX+ $VER no está probado con owrx-estereo (probado en: $PROBADAS)."
+      echo "No se toca nada. (Para probar bajo tu responsabilidad: aplicar --forzar)"
+      exit 1
+    fi
     YA=0
     [ -d "$D/owrx_estereo" ] && grep -q "owrx-estereo (EA7CL)" "$D/csdr/chain/analog.py" \
       && grep -q "owrx-estereo (EA7CL)" "$D/owrx/dsp.py" && grep -q "estereo_fm" "$INIT" 2>/dev/null && YA=1
@@ -135,6 +150,7 @@ case "$ACCION" in
     ;;
   estado)
     echo "OpenWebRX $VER en $D"
+    echo " $PROBADAS " | grep -q " $VER " && echo "versión probada: sí" || echo "versión probada: NO (probado en $PROBADAS; no se aplicaría)"
     [ -d "$D/owrx_estereo" ] && echo "paquete owrx_estereo: instalado" || echo "paquete owrx_estereo: no"
     parches estado
     [ -f /etc/apt/apt.conf.d/99owrx-estereo ] && echo "reaplicado tras actualizaciones: sí" || echo "reaplicado tras actualizaciones: no"

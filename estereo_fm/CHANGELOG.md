@@ -1,5 +1,11 @@
 # estereo_fm (owrx-estereo) · cambios
 
+## 1.2.1 · 2026-11-13
+- Solo se aplica en versiones probadas (ahora 1.2.128). En la 1.2.130 cambió la cadena de FM
+  (y trae su propio modo BCFM estéreo): el enganche la rompería. `aplicar --forzar` para pruebas.
+  Tras una actualización con apt a una versión no probada, no se reaplica (lo anota en el registro).
+- Segunda protección: si `analog.py` tiene la FM nueva (BaseWFm/BCFm), no se cambia nada.
+
 ## 1.2 · 2026-11-13
 - Compresor ADPCM propio, sin hilos: el `AdpcmEncoder` de pycsdr a veces se quedaba esperando
   para siempre y paraba toda la cadena de FM (el audio "empezaba y se cortaba").

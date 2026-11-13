@@ -27,6 +27,7 @@ Desarrollos para el receptor OpenWebRX+ de EA7CL (Málaga). Cada desarrollo va e
 | [`anti_iframe/`](anti_iframe/) | Aviso si otra web muestra el receptor incrustado sin permiso. | ver [CHANGELOG](anti_iframe/CHANGELOG.md) |
 | [`https/`](https/) | El receptor también por https en el puerto 8443 (certificado gratuito de Let's Encrypt que se renueva solo); el 8073 sigue igual. | — |
 | [`copia_owrx/`](copia_owrx/) | Copia completa de lo personalizado y actualización de OpenWebRX+ que lo conserva. Instrucciones en [LEEME.txt](copia_owrx/LEEME.txt). | — |
+| [`estereo_fm/`](estereo_fm/) | FM comercial y DAB+ en estéreo real: decodificador estéreo en el servidor, botón ESTÉREO/MONO y medidores L/R en MODOS. Se vuelve a poner solo tras actualizar con apt. | ver [CHANGELOG](estereo_fm/CHANGELOG.md) |
 
 Cada carpeta tiene su **instalador**, su **explicación** (README) y su **desinstalador**. Los desinstaladores
 no borran nada: guardan `init.js` y el plugin en `/home/ea7cl/desinstalado-<plugin>-FECHA` y al terminar

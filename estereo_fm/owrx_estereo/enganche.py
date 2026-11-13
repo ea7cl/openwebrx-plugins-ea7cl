@@ -8,6 +8,15 @@ import time
 logger = logging.getLogger("owrx_estereo")
 
 
+def nativo():
+    """La clase HdStereo si esta versión de OpenWebRX ya trae estéreo propio (1.2.130+); si no, None."""
+    try:
+        from csdr.chain.demodulator import HdStereo
+        return HdStereo
+    except ImportError:
+        return None
+
+
 def aplicar_analog(g):
     """Al final de csdr/chain/analog.py: cambia WFm por la versión estéreo."""
     if "BaseWFm" in g or "BCFm" in g:
@@ -21,6 +30,11 @@ def aplicar_analog(g):
 
 def aplicar_dablin(g):
     """Al final de csdr/chain/dablin.py: cambia Dablin por la versión estéreo."""
+    hd_estereo = nativo()
+    if hd_estereo is not None:          # 1.2.130 o posterior: por el estéreo propio de OpenWebRX
+        from .dab_nativo import clase_dablin_nativa
+        g["Dablin"] = clase_dablin_nativa(g["Dablin"], hd_estereo)
+        return
     from .dab import clase_dablin
     g["Dablin"] = clase_dablin(g["Dablin"])
 

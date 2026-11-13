@@ -1,4 +1,12 @@
 # estereo_fm (owrx-estereo) · cambios
+## 2.0 · 2026-11-13
+- Modo nativo para OpenWebRX+ 1.2.130 o posterior (el script lo elige solo):
+  - FM estéreo con el modo **BCFM** que ya trae OpenWebRX (en WFM sigue en mono).
+  - DAB+ estéreo: `dablin.py` deja de mezclar a mono y sale por el estéreo de OpenWebRX (HdStereo).
+  - Página: botón ESTÉREO/MONO y medidores L/R encima del estéreo de OpenWebRX.
+  - Solo se tocan `dablin.py` e `init.js` (nada de `analog.py` ni `dsp.py`).
+- En 1.2.128 sigue funcionando como la 1.2.1.
+- Probado en la Pi (1.2.130: BCFM y DAB estéreo con L/R y botón) e instalado en el Ubuntu.
 
 ## 1.2.1 · 2026-11-13
 - Solo se aplica en versiones probadas (ahora 1.2.128). En la 1.2.130 cambió la cadena de FM

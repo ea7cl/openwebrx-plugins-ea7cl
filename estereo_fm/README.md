@@ -1,9 +1,21 @@
 # owrx-estereo (EA7CL) · FM comercial y DAB+ en estéreo real para OpenWebRX+
 
-Probado en OpenWebRX+ **1.2.128** (Raspberry Pi 5, Debian 12).
+Probado en OpenWebRX+ **1.2.128** y **1.2.130** (Raspberry Pi 5 con Debian 12; Ubuntu 22.04).
 
 Instalar: `sudo bash estereo_fm-install.sh` · Quitar: `sudo bash estereo_fm-uninstall.sh` · Estado: `bash owrx-estereo.sh estado`.
 Cambios: [CHANGELOG.md](CHANGELOG.md).
+
+## Dos modos, según la versión de OpenWebRX+ (el script lo elige solo)
+
+| | 1.2.128 (modo antiguo) | 1.2.130 o posterior (modo nativo) |
+|---|---|---|
+| FM estéreo | decodificador propio, en el modo **WFM** | el modo **BCFM** que ya trae OpenWebRX |
+| DAB+ estéreo | separador propio + mensaje propio (tipo 5) | `dablin.py` deja de mezclar a mono y usa el estéreo de OpenWebRX |
+| Archivos de OpenWebRX tocados | `analog.py`, `dablin.py`, `dsp.py`, `init.js` | solo `dablin.py` e `init.js` |
+| Página | reproduce el estéreo ella misma | reproduce OpenWebRX; el complemento solo pone botón y medidores |
+
+**En el modo nativo, para oír la FM en estéreo** hay que usar el modo **BCFM** (en el panel de
+administración, en los perfiles de FM comercial, o eligiéndolo en MODOS). En WFM sigue en mono.
 
 ## Qué hace
 
@@ -48,8 +60,7 @@ No toca la configuración de OpenWebRX (`/etc/openwebrx`, `/var/lib/openwebrx`).
 ## Llevarlo a otro servidor (por ejemplo, un Ubuntu)
 
 Sirve para OpenWebRX+ **instalado con apt** (paquete `openwebrx`), no para la versión en Docker,
-y **solo en versiones probadas (1.2.128)**. La 1.2.130 cambió la cadena de FM y trae su propio
-modo estéreo **BCFM**; ahí el script no aplica nada (hay que adaptarlo y probarlo antes).
+y **solo en versiones probadas (1.2.128 y 1.2.130)**. En la 1.2.130 se usa el modo nativo (ver arriba).
 
 1. Copiar esta carpeta al servidor (por ejemplo, a `/tmp/owrx-estereo`).
 2. `bash owrx-estereo.sh estado` → debe decir dónde está OpenWebRX y "sin poner".
@@ -69,7 +80,8 @@ No hace falta configurar nada: respeta `audio_compression` (ADPCM o sin comprimi
 ├── owrx_estereo/                          NUEVO
 │   ├── __init__.py                        versión
 │   ├── fm.py                              decodificador estéreo de FM (piloto 19 kHz, L−R a 38 kHz)
-│   ├── dab.py                             DAB: deja de mezclar a mono la salida de dablin
+│   ├── dab.py                             DAB en 1.2.128 (separador propio)
+│   ├── dab_nativo.py                      DAB en 1.2.130+ (por el estéreo de OpenWebRX)
 │   ├── emisor.py                          envío L/R a la página (ADPCM propio o PCM)
 │   └── enganche.py                        lo que llaman los archivos modificados
 ├── htdocs/plugins/receiver/
@@ -79,10 +91,10 @@ No hace falta configurar nada: respeta `audio_compression` (ADPCM o sin comprimi
 │   │   └── procesador.js                  reproductor de 2 canales (AudioWorklet)
 │   └── init.js                            MODIFICADO: + Plugins.load('estereo_fm')
 ├── csdr/chain/
-│   ├── analog.py                          MODIFICADO: + 6 líneas al final (WFm → estéreo)
+│   ├── analog.py                          MODIFICADO solo en 1.2.128: + 6 líneas (WFm → estéreo)
 │   └── dablin.py                          MODIFICADO: + 6 líneas al final (Dablin → estéreo)
 └── owrx/
-    └── dsp.py                             MODIFICADO: + 5 líneas en setDemodulator
+    └── dsp.py                             MODIFICADO solo en 1.2.128: + 5 líneas en setDemodulator
 
 /usr/local/sbin/owrx-estereo               NUEVO: el script, para aplicar/deshacer/estado
 /usr/local/share/owrx-estereo/             NUEVO: copia de los archivos para reaplicar
@@ -147,6 +159,9 @@ ejecuta dentro de él, si se publica conviene usar también la AGPL-3.0.
 
 ## Historial
 
+- **2.0** · Modo nativo para OpenWebRX+ 1.2.130+: FM con su BCFM, DAB estéreo por su HdStereo,
+  botón y medidores L/R encima de su estéreo. Solo toca `dablin.py` e `init.js`.
+- **1.2.1** · Solo se aplica en versiones probadas.
 - **1.2** · Compresor ADPCM propio (el de pycsdr se colgaba y cortaba la FM). Caja siempre en
   MODOS (también con los modos en botones). Reserva de 0,3 s en la reproducción.
 - **1.1** · Un ADPCM por canal (quita la "fritura"); PCM si la compresión está desactivada;

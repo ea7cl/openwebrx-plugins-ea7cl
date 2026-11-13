@@ -13,4 +13,4 @@ canal (emisor.py). El servidor avisa a la página de cuántos canales hay
 ({"type": "ea7cl_estereo", "canales": 1|2}) al cambiar de modo y cada 2 s.
 """
 
-VERSION = "1.2.1"
+VERSION = "2.0"

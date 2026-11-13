@@ -11,9 +11,12 @@
  *   · botón ESTÉREO / MONO (pulsando se escucha en mono) y medidores de los canales L y R;
  *   · al grabar, guarda la mezcla en mono (como antes).
  * Se instala y se quita con owrx-estereo.sh.
+ *
+ * En OpenWebRX+ 1.2.130 o posterior (estéreo propio: modo BCFM y mensaje de audio estéreo) solo
+ * se ponen el botón y los medidores encima del estéreo de OpenWebRX (ver NATIVO más abajo).
  */
 Plugins.estereo_fm = Plugins.estereo_fm || {};
-Plugins.estereo_fm._version = 1.2;
+Plugins.estereo_fm._version = 2.0;
 
 (function () {
     const E = Plugins.estereo_fm;
@@ -57,12 +60,64 @@ Plugins.estereo_fm._version = 1.2;
             && Date.now() - E.ultimo < 600;
     }
 
-    // mientras llega estéreo, el mono de siempre (mensaje 4) no se reproduce (sería doble)
-    const pushHdOriginal = AudioEngine.prototype.pushHdAudio;
-    AudioEngine.prototype.pushHdAudio = function (data) {
-        if (estereoActivo(this)) { this.audioBytes.add(data.byteLength); this.lastHd = true; return; }
-        return pushHdOriginal.call(this, data);
-    };
+    // OpenWebRX+ 1.2.130 o posterior ya trae estéreo propio (mensaje de audio estéreo, modo BCFM;
+    // el DAB lo manda por ahí owrx_estereo/dab_nativo.py). Entonces la reproducción es la suya y
+    // aquí solo se miran los canales L/R (medidores) y se mezclan a mono si se pulsa el botón.
+    const NATIVO = typeof AudioEngine.prototype.pushHdStereo === 'function';
+    E.nativo = NATIVO;
+
+    function analizar(li, ri) {
+        const k = Math.min(li.length, ri.length);
+        let dif = 0, tot = 0, picoL = 0, picoR = 0;
+        for (let i = 0; i < k; i++) {
+            const l = li[i], r = ri[i];
+            const al = Math.abs(l), ar = Math.abs(r);
+            dif += Math.abs(l - r); tot += al + ar;
+            if (al > picoL) picoL = al;
+            if (ar > picoR) picoR = ar;
+        }
+        // medidores L / R: suben enseguida y bajan despacio, como un VU
+        E.picoL = Math.max(picoL / 32768, (E.picoL || 0) * 0.85);
+        E.picoR = Math.max(picoR / 32768, (E.picoR || 0) * 0.85);
+        E.diferencia = 0.8 * E.diferencia + 0.2 * (tot > 0 ? dif / tot : 0);
+        E.ultimo = Date.now();
+    }
+
+    if (NATIVO) {
+        const procesarOriginal = AudioEngine.prototype.processAudio;
+        AudioEngine.prototype.processAudio = function (data, resampler, recorder, stereo) {
+            if (!stereo || !resampler) return procesarOriginal.apply(this, arguments);
+            // se mira el audio ya descomprimido, justo antes del remuestreo: [L, R] (Int16)
+            const procesar = resampler.process;
+            resampler.process = function (buf) {
+                resampler.process = procesar;
+                try {
+                    if (buf && buf.length === 2) {
+                        analizar(buf[0], buf[1]);
+                        if (E.forzarMono) {
+                            const k = Math.min(buf[0].length, buf[1].length), m = new Int16Array(k);
+                            for (let i = 0; i < k; i++) m[i] = (buf[0][i] + buf[1][i]) >> 1;
+                            buf = [m, m];
+                            E.picoL = E.picoR = Math.max(E.picoL || 0, E.picoR || 0);
+                        }
+                    }
+                } catch (e) { /* si algo falla, el audio sigue tal cual */ }
+                return procesar.call(resampler, buf);
+            };
+            try {
+                return procesarOriginal.apply(this, arguments);
+            } finally {
+                resampler.process = procesar;
+            }
+        };
+    } else {
+        // mientras llega estéreo, el mono de siempre (mensaje 4) no se reproduce (sería doble)
+        const pushHdOriginal = AudioEngine.prototype.pushHdAudio;
+        AudioEngine.prototype.pushHdAudio = function (data) {
+            if (estereoActivo(this)) { this.audioBytes.add(data.byteLength); this.lastHd = true; return; }
+            return pushHdOriginal.call(this, data);
+        };
+    }
 
     function recibirEstereo(buf) {
         const eng = (typeof audioEngine !== 'undefined') ? audioEngine : null;
@@ -258,7 +313,9 @@ Plugins.estereo_fm._version = 1.2;
     }
     function pintar() {
         const modo = (typeof UI !== 'undefined' && UI.getModulation) ? UI.getModulation() : '';
-        const aplica = E.canales === 2 && (modo === 'wfm' || modo === 'dab');
+        const aplica = NATIVO
+            ? (Date.now() - E.ultimo < 1500 && (modo === 'bcfm' || modo === 'wfm' || modo === 'dab'))
+            : (E.canales === 2 && (modo === 'wfm' || modo === 'dab'));
         if (!montarCaja()) return;
         if (!aplica) { caja.style.display = 'none'; return; }
         caja.style.display = '';
@@ -278,8 +335,10 @@ Plugins.estereo_fm._version = 1.2;
 
     E.init = function () {
         setInterval(function () {
-            envolverSocket();
-            if (typeof audioEngine !== 'undefined' && audioEngine && audioEngine.started) cambiarNodo(audioEngine);
+            if (!NATIVO) {
+                envolverSocket();
+                if (typeof audioEngine !== 'undefined' && audioEngine && audioEngine.started) cambiarNodo(audioEngine);
+            }
             pintar();
         }, 400);
         setInterval(pintarVu, 80);

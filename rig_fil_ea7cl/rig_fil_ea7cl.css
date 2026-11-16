@@ -1,0 +1,27 @@
+/* rig_fil_ea7cl 0.1 · el letrero FIL y TS del panel rig como botones con desplegable */
+body.rigfil-on #openwebrx-panel-receiver .owrx-rig-info-filter,
+body.rigfil-on #openwebrx-panel-receiver .owrx-rig-info-step { cursor: pointer; white-space: nowrap; }
+body.rigfil-on #openwebrx-panel-receiver .owrx-rig-info-filter::after,
+body.rigfil-on #openwebrx-panel-receiver .owrx-rig-info-step::after { content: ' \25BE'; font-size: 8pt; }
+body.rigfil-on #openwebrx-panel-receiver .owrx-rig-info-filter:hover,
+body.rigfil-on #openwebrx-panel-receiver .owrx-rig-info-step:hover { filter: brightness(1.35); }
+.rigfil-pop { min-width: 150px; }
+.rigfil-pop .rigfil-pop-title {
+    padding: 4px 12px 3px 12px;
+    font: bold 8pt roboto-mono, monospace;
+    letter-spacing: 1px;
+    color: #5db8ff;
+    border-bottom: 1px solid #23303c;
+}
+.rigfil-pop .owrx-rig-rit-menu-item { font-size: 9pt; padding: 5px 12px; }
+.rigfil-pop .rigfil-pop-off { color: #6f7d8a; cursor: default; }
+.rigfil-pop .rigfil-pop-off:hover { background: none; }
+
+/* FIL y TS más juntos y la cifra roja (frecuencia del ratón) más pequeña, para que quepa todo
+   en una línea; igual que el doble receptor en pantalla dividida */
+body.rigfil-on #openwebrx-panel-receiver #owrx-rig-info { gap: 8px; flex-wrap: nowrap; }
+body.rigfil-on #openwebrx-panel-receiver #owrx-rig-info > .owrx-rig-info-step { margin-left: -3px; }
+body.rigfil-on #openwebrx-panel-receiver #owrx-rig-info > .webrx-mouse-freq {
+    font-size: 14.5px; letter-spacing: 0.3px; white-space: nowrap;
+    width: auto; flex: 0 0 auto; margin-left: auto; margin-right: auto;   /* centrada en el hueco libre */
+}

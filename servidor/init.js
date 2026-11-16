@@ -78,6 +78,7 @@ Plugins.load('rig_skin_es');
 Plugins.load('perfil_recordado');
 Plugins.load('rig_colores_ea7cl');
 Plugins.load('rig_volumen_ea7cl');
+Plugins.load('rig_fil_ea7cl');   // EA7CL: FIL y TS con desplegable
 Plugins.load('rig_dx_spotter');
 Plugins.load('profile_jump');
 
@@ -123,3 +124,5 @@ try { if (!localStorage.getItem('ea7_tema_rig')) { localStorage.setItem('ea7_tem
 //Plugins.load('autozoom');
 Plugins.load('botones_ea7cl');
 Plugins.load('meshtastic_narrow');   // EA7CL: panel de mensajes para el modo Meshtastic Narrow
+Plugins.load('estereo_fm');   // EA7CL: FM y DAB en estéreo (owrx-estereo)
+Plugins.load('scan_pausa_ea7cl');   // EA7CL: SCAN con pausa de 5 s

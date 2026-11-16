@@ -12,7 +12,7 @@ Desarrollos para el receptor OpenWebRX+ de EA7CL (Málaga). Cada desarrollo va e
 | [`meshtastic_narrow/`](meshtastic_narrow/) | Modo Meshtastic Narrow (62,5 kHz, SF7-9) para la red SFNarrow de 869,618 MHz, junto al Meshtastic normal: mensajes en su panel y nodos en el mapa. | ver [CHANGELOG](meshtastic_narrow/CHANGELOG.md) |
 | [`rig_skin_es/`](rig_skin_es/) | Traduce al español los textos de rig_skin. | ver [CHANGELOG](rig_skin_es/CHANGELOG.md) |
 | [`rig_colores_ea7cl/`](rig_colores_ea7cl/) | Colores y tamaños de letra propios del aspecto rig_skin. | ver [CHANGELOG](rig_colores_ea7cl/CHANGELOG.md) |
-| [`rig_volumen_ea7cl/`](rig_volumen_ea7cl/) | Barra de volumen en el frontal de rig_skin. | ver [CHANGELOG](rig_volumen_ea7cl/CHANGELOG.md) |
+| [`rig_volumen_ea7cl/`](rig_volumen_ea7cl/) | Todo el volumen del receptor: barra VOL en el frontal de rig_skin, MUTE sin mover las barras y rueda del ratón. | ver [CHANGELOG](rig_volumen_ea7cl/CHANGELOG.md) |
 | [`rig_fil_ea7cl/`](rig_fil_ea7cl/) | Letreros FIL y TS del panel rig como botones con desplegable (anchos, restaurar filtro, pasos). | ver [CHANGELOG](rig_fil_ea7cl/CHANGELOG.md) |
 | [`scan_pausa_ea7cl/`](scan_pausa_ea7cl/) | El SCAN se para solo 5 s en cada memoria con señal y sigue con la siguiente. | ver [CHANGELOG](scan_pausa_ea7cl/CHANGELOG.md) |
 | [`rig_dx_spotter/`](rig_dx_spotter/) | Mejoras de la ventana DX CLUSTER: quién anuncia, filtro Europa, banda, comentarios y colores por modo. | ver [CHANGELOG](rig_dx_spotter/CHANGELOG.md) |

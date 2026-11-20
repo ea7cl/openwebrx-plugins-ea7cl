@@ -1,7 +1,8 @@
-/* anti_iframe v0.1 (EA7CL) - avisa si el receptor se muestra incrustado en la web de otro */
+/* anti_iframe v0.2 (EA7CL) - avisa si el receptor se muestra incrustado en la web de otro
+   0.2: se permite dentro de la propia web del receptor (pantalla dividida del doble receptor) */
 Plugins.anti_iframe = Plugins.anti_iframe || {};
 Plugins.anti_iframe.no_css = true;
-Plugins.anti_iframe._version = 0.1;
+Plugins.anti_iframe._version = 0.2;
 
 // Webs a las que SI se permite incrustar el receptor. Ejemplo: ['miweb.es']
 Plugins.anti_iframe.permitidos = [];
@@ -10,6 +11,9 @@ Plugins.anti_iframe.init = function () {
   var incrustado;
   try { incrustado = window.top !== window.self; } catch (e) { incrustado = true; }
   if (!incrustado) return true;
+
+  // dentro de la propia web (misma dirección): no es la web de otro
+  try { if (window.top.location.origin === window.location.origin) return true; } catch (e) {}
 
   var origen = '';
   try { origen = new URL(document.referrer).hostname; } catch (e) {}

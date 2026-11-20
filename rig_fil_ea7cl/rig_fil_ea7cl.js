@@ -1,15 +1,15 @@
 /*
- * rig_fil_ea7cl 0.1 (EA7CL) · los letreros «FIL …» y «TS …» del panel rig se convierten en botones con desplegable.
+ * rig_fil_ea7cl 0.2 (EA7CL) · los letreros «FIL …» y «TS …» del panel rig se convierten en botones con desplegable.
  *
  * Clic en «FIL»: N / M / W, Ensanchar, Estrechar, Desplazar ← / →, Restaurar de fábrica (este modo)
  * y Restaurar todos los modos (lo mismo que Ctrl+Alt+1 o la tecla |).
  * Un segundo clic en el letrero (o un clic fuera) lo cierra y deja todo en reposo.
  * Es el mismo desplegable que el del MAIN del doble receptor (doble_receptor 1.8.2 y siguientes).
- * Si el doble receptor está cargado, este plugin no hace nada (ya lo trae él).
+ * 0.2: funciona también con el doble receptor 2.x (que ya no trae su propio desplegable).
  */
 (function () {
     'use strict';
-    var VERSION = '0.1';
+    var VERSION = '0.2';
     var CLAVE = 'rig_fil_ea7cl';
     if (window.Plugins) { Plugins.rig_fil_ea7cl = Plugins.rig_fil_ea7cl || {}; Plugins.rig_fil_ea7cl._version = VERSION; }
 
@@ -128,7 +128,7 @@
 
     var intentos = 0;
     (function esperar() {
-        if (window.DR || (window.Plugins && Plugins.doble_receptor)) return;   // el doble receptor ya lo trae
+        if (window.DR) return;   // solo el doble receptor 1.x traía su propio desplegable
         if (!$('#openwebrx-panel-receiver .owrx-rig-info-filter').length && ++intentos < 80) { setTimeout(esperar, 250); return; }
         document.body.classList.add('rigfil-on');
         lastMod = mod();

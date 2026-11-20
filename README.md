@@ -17,6 +17,7 @@ Desarrollos para el receptor OpenWebRX+ de EA7CL (Málaga). Cada desarrollo va e
 | [`scan_pausa_ea7cl/`](scan_pausa_ea7cl/) | El SCAN se para solo 5 s en cada memoria con señal y sigue con la siguiente. | ver [CHANGELOG](scan_pausa_ea7cl/CHANGELOG.md) |
 | [`rig_dx_spotter/`](rig_dx_spotter/) | Mejoras de la ventana DX CLUSTER: quién anuncia, filtro Europa, banda, comentarios y colores por modo. | ver [CHANGELOG](rig_dx_spotter/CHANGELOG.md) |
 | [`doppler_autostart/`](doppler_autostart/) | Doppler automático: elegir un satélite en SAT, en la pantalla de pases del panel o en DOP lo sintoniza y lo sigue; botón DOP encendido; TRACK sin enganches. | ver [CHANGELOG](doppler_autostart/CHANGELOG.md) |
+| [`doble_receptor/`](doble_receptor/) | Doble receptor MAIN / SUB en pantalla dividida, sobre el mismo SDR. Con modos: solo con enlace `?dual` (el instalado), para todos o apagado. | ver [CHANGELOG](doble_receptor/CHANGELOG.md) |
 | [`rig_skin/`](rig_skin/) | rig_skin 0.10.20 con los parches EA7CL, y sus scripts de actualización y parcheo. | 0.10.20 |
 | [`audio_dsp/`](audio_dsp/) | Analizador de espectro de audio, ecualizador paramétrico y filtros. | 2.4 |
 | [`servidor/`](servidor/) | `init.js` del servidor y scripts del sistema (dablin, filtro_detector, bloquear_redes). | — |

@@ -127,3 +127,5 @@ Plugins.load('botones_ea7cl');
 Plugins.load('meshtastic_narrow');   // EA7CL: panel de mensajes para el modo Meshtastic Narrow
 Plugins.load('estereo_fm');   // EA7CL: FM y DAB en estéreo (owrx-estereo)
 Plugins.load('scan_pausa_ea7cl');   // EA7CL: SCAN con pausa de 5 s
+
+(function () { var m = null; try { m = window.frameElement; } catch (e) {} if (/[?&]dual(=|&|$)/.test(location.search) || (m && m.id === 'drx-sub')) Plugins.load('doble_receptor'); })();   // EA7CL: doble receptor MAIN/SUB, solo con ?dual

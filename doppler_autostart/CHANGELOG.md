@@ -1,5 +1,9 @@
 # Historial de doppler_autostart
 
+## v0.6 — 20-nov-2026
+- Al elegir un satélite se quita el silenciador (SQ al mínimo) y se mantiene abierto mientras dura el seguimiento. Al parar (STOP, otra frecuencia o cambio de perfil), el SQ vuelve a funcionar con normalidad. Solo afecta a la escucha de satélites.
+- Instalado en el servidor `openwebrx`, con copia de la 0.5 en `/var/backups/doppler-autostart/`.
+
 ## v0.5 — 20-nov-2026
 - La pantalla de pases del panel de control (tecla SAT de abajo) también arranca el Doppler. rig_skin sintonizaba, pero no avisaba al Doppler.
 - Instalado en el servidor `openwebrx`, con copia de la 0.1 en `/var/backups/doppler-autostart/`.

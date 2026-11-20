@@ -1,5 +1,5 @@
 /*
- * doppler_autostart 0.5 (EA7CL) · arranque automático del Doppler desde SAT
+ * doppler_autostart 0.6 (EA7CL) · arranque automático del Doppler desde SAT
  *
  * Al elegir un satélite en la ventana SAT de rig_skin (rig_skin avisa con el
  * evento «owrxplus:satellite-tuned»), pone en marcha el seguimiento Doppler
@@ -20,7 +20,7 @@
  * propio Doppler.
  */
 Plugins.doppler_autostart = Plugins.doppler_autostart || {};
-Plugins.doppler_autostart._version = 0.5;
+Plugins.doppler_autostart._version = 0.6;
 Plugins.doppler_autostart.no_css = true;
 
 // margen para dar por llegada la frecuencia (el Doppler en 70 cm es de ±10 kHz)
@@ -43,6 +43,16 @@ Plugins.doppler_autostart.init = function () {
             var d = $('#openwebrx-panel-receiver').demodulatorPanel().getDemodulator();
             return d.get_offset_frequency() + center_freq;
         } catch (e) { return null; }
+    }
+    // 0.6: al ir a escuchar un satélite se quita el silenciador (squelch
+    // al mínimo = abierto), como si el oyente bajara la barra SQ del todo
+    function abrirSilenciador() {
+        try {
+            var $s = $('#openwebrx-panel-receiver .openwebrx-squelch-slider');
+            if (!$s.length) return;
+            var min = String($s.attr('min') || -150);
+            if (String($s.val()) !== min) $s.val(min).trigger('change');
+        } catch (e) {}
     }
     function parar(motivo) {
         if (siguiendo() && typeof D().stop_tracker === 'function') D().stop_tracker(motivo);
@@ -104,10 +114,13 @@ Plugins.doppler_autostart.init = function () {
         $('#satellite-input').val(id);
         if (D()) { D().lastSatId = id; D().selectedSatelliteName = sat.name || ''; }
         estado((sat.name || 'Satélite') + ': esperando a que llegue el receptor...');
+        abrirSilenciador();
         esperarDoppler(function () {
             Promise.all([datos(id), new Promise(function (ok) { llegado(sat, ok, mio); })])
                 .then(function (r) {
                     if (mio !== pedido) return;
+                    // otra vez al llegar: el cambio de modo o de perfil puede volver a ponerlo
+                    abrirSilenciador();
                     parar();
                     D().start_tracker(r[0]);
                     // el nombre de la ventana SAT y, entre paréntesis, el de CelesTrak
@@ -279,6 +292,11 @@ Plugins.doppler_autostart.init = function () {
         setTimeout(espejoSub, 50);
     }, true);
 
+    // 0.6: mientras se sigue un satélite, el silenciador siempre abierto
+    // (con el Doppler y el desvanecimiento, el squelch cortaría la señal).
+    // Al parar el seguimiento, el oyente puede volver a usar SQ
+    setInterval(function () { if (siguiendo()) abrirSilenciador(); }, 500);
+
     // cambio de perfil: el Doppler ya no vale
     $(document).on('event:profile_changed.doppler_autostart', function () {
         pedido++;
@@ -304,6 +322,6 @@ Plugins.doppler_autostart.init = function () {
         if (!sat) return;
         setTimeout(function () { $(document).trigger('owrxplus:satellite-tuned', [sat]); }, 0);
     }, true);
-    console.log('[doppler_autostart] 0.5 cargado.');
+    console.log('[doppler_autostart] 0.6 cargado.');
     return true;
 };

@@ -1,5 +1,5 @@
 #!/bin/bash
-# doppler_autostart 0.5 (EA7CL): estado / aplicar / deshacer
+# doppler_autostart 0.6 (EA7CL): estado / aplicar / deshacer
 # Uso: sudo bash scripts/doppler_autostart.sh estado|aplicar|deshacer
 # Solo cambia un archivo: plugins/receiver/doppler_autostart/doppler_autostart.js
 # (init.js y el enganche en rig_skin de la 0.1 se quedan como están).
@@ -36,7 +36,7 @@ aplicar)
     cp -p "$DEST" "$F/doppler_autostart.js"
     (cd "$F" && sha256sum doppler_autostart.js > SHA256)
     install -m 644 "$NUEVO" "$DEST"
-    echo "Instalada la 0.5. Copia de la anterior en $F"
+    echo "Instalada la 0.6. Copia de la anterior en $F"
     echo "En el navegador: Ctrl+F5."
     ;;
 deshacer)

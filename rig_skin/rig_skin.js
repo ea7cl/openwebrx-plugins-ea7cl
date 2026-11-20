@@ -1420,6 +1420,9 @@ Plugins.rig_skin.createSatWindow = function () {
             render();
         } else if (selected === b[2].name) {
             Plugins.rig_skin.tuneTo(b[2].f, b[2].mode);
+            /* DOPPLER_AUTOSTART_HOOK_BEGIN */
+            $(document).trigger('owrxplus:satellite-tuned', [b[2]]);
+            /* DOPPLER_AUTOSTART_HOOK_END */
         } else {
             selected = b[2].name;
             render();
@@ -1492,6 +1495,9 @@ Plugins.rig_skin.createSatWindow = function () {
                     selected = p.sat.name;
                     render();
                     Plugins.rig_skin.tuneTo(x.f, x.mode);
+                    /* DOPPLER_AUTOSTART_HOOK_BEGIN */
+                    $(document).trigger('owrxplus:satellite-tuned', [p.sat]);
+                    /* DOPPLER_AUTOSTART_HOOK_END */
                 }));
             });
             $plist.append($('<tr>').toggleClass('active', active)
@@ -1504,6 +1510,9 @@ Plugins.rig_skin.createSatWindow = function () {
                     selected = p.sat.name;
                     render();
                     Plugins.rig_skin.tuneTo(p.sat.f, p.sat.mode);
+          /* DOPPLER_AUTOSTART_HOOK_BEGIN */
+          $(document).trigger('owrxplus:satellite-tuned', [p.sat]);
+          /* DOPPLER_AUTOSTART_HOOK_END */
                 }));
         });
     }

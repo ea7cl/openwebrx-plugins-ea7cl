@@ -92,6 +92,7 @@ Plugins.load('status_polish');
 Plugins.load('controls_polish');
 
 Plugins.load('https://0xaf.github.io/openwebrxplus-plugins/receiver/doppler/doppler.js');
+Plugins.load('doppler_autostart');
 
 
 //Plugins.load('https://0xaf.github.io/openwebrxplus-plugins/receiver/listeners/listeners.js');

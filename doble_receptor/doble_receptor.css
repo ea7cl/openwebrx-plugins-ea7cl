@@ -66,8 +66,13 @@ html.drx-sub #audio-dsp-window { max-height: none !important; }
 }
 /* con zoom, la cinta de marcadores y la cascada del MAIN son más anchas que su mitad:
    se recortan en el borde para que no se metan en la zona del SUB */
-html.drx-dual.drx-main #openwebrx-frequency-container,
 html.drx-dual.drx-main #webrx-canvas-background { overflow: hidden !important; }
+/* 2.1.18: la cinta y la escala solo se recortan a los lados; por abajo cuelgan las
+   flechas ◀ ▶ de la cascada (openwebrx-tune-button), que con hidden desaparecían */
+html.drx-dual.drx-main #openwebrx-frequency-container {
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+}
 
 /* raya que separa MAIN y SUB */
 html.drx-dual body { background: #2a3440; }

@@ -1,6 +1,6 @@
 # doble_receptor — Doble receptor MAIN / SUB (EA7CL)
 
-Plugin de receptor para OpenWebRX+, versión **2.1.17**. Se instaló en el servidor `openwebrx` el 20-nov-2026, en **modo enlace**. Es idéntico al de este repositorio (comprobado con SHA-256). Necesita `rig_skin`, `anti_iframe` **0.2** y `rig_fil_ea7cl` **0.2**; el instalador pone estas dos versiones.
+Plugin de receptor para OpenWebRX+, versión **2.1.18**. Se instaló en el servidor `openwebrx` el 20-nov-2026, en **modo enlace**. Es idéntico al de este repositorio (comprobado con SHA-256). Necesita `rig_skin`, `anti_iframe` **0.2** y `rig_fil_ea7cl` **0.2**; el instalador pone estas dos versiones.
 
 ![MAIN y SUB](capturas/instalado-ubuntu-enlace-dual.jpg)
 
@@ -10,6 +10,7 @@ Plugin de receptor para OpenWebRX+, versión **2.1.17**. Se instaló en el servi
 - La cabecera y el letrero del tiempo salen una sola vez y a todo el ancho, como con un solo receptor.
 - El MAIN es la página de siempre. El SUB es otra vez la página del receptor, dentro de la otra mitad: un oyente completo, con su panel, su cascada y todos los plugins. Por eso tiene las mismas opciones que el MAIN.
 - Los dos receptores usan el **mismo SDR y perfil**: cada uno escucha su frecuencia dentro de la banda.
+- Las flechas ◀ ▶ de la cascada («Tune down» / «Tune up») están en los dos receptores.
 - En DUAL, cada panel tiene las teclas **L** y **R** (altavoz izquierdo o derecho), **⇆ / ⇅** (columnas o filas) y **DUAL** para salir sin recargar. No tienen rueda, NR, TS, − +, ◀ ▶ ni RIT.
 - **Receptor marcado**: con un clic en su cascada, su panel o su letrero (contorno verde para el MAIN, naranja para el SUB). LST, QRG, DX, SAT y WATCH actúan sobre el receptor marcado.
 - **Guarda antirrobot**: un DX o SAT fuera de la banda, que movería el SDR común, se frena con un aviso.
@@ -32,7 +33,7 @@ En los modos `enlace` y `apagado`, los oyentes normales ni siquiera descargan el
 
 | Archivo | Para qué |
 |---|---|
-| `doble_receptor.js`, `doble_receptor.css` | El plugin (2.1.17). |
+| `doble_receptor.js`, `doble_receptor.css` | El plugin (2.1.18). |
 | `scripts/doble_receptor.sh` | `estado` / `aplicar [modo]` / `modo enlace\|todos\|apagado` / `deshacer`. |
 | `original/` | `anti_iframe` 0.1 y `rig_fil_ea7cl` 0.1, las versiones de antes, que el instalador reconoce. |
 | `../anti_iframe/anti_iframe.js`, `../rig_fil_ea7cl/rig_fil_ea7cl.js` | Las 0.2 que pone el instalador. |

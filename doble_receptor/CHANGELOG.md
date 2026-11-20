@@ -1,5 +1,8 @@
 # Historial de doble_receptor
 
+## v2.1.18 — 20-nov-2026
+- Flechas ◀ ▶ de la cascada (Tune down / Tune up) también en el MAIN. La caja de la escala del MAIN se recortaba con `overflow: hidden` y las tapaba. Ahora se recorta solo a los lados (`overflow-x: clip`), así que con zoom la cinta sigue sin meterse en el SUB. Instalada en el servidor el 20-11-2026.
+
 ## v2.1.17 — 20-nov-2026
 - Primera versión en el repositorio, instalada en el servidor `openwebrx` en modo enlace.
 - Instalador con tres modos (`enlace`, `todos` y `apagado`) que solo cambian la línea de `init.js`. `deshacer` vuelve byte a byte desde cualquiera de ellos.

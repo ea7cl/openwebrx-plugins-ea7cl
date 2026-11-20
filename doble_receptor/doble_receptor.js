@@ -18,7 +18,7 @@
 
     var DR = Plugins.doble_receptor = Plugins.doble_receptor || {};
     DR._version = 2.1;
-    DR.version = '2.1.17';
+    DR.version = '2.1.18';
 
     var raizHtml = document.documentElement;
 

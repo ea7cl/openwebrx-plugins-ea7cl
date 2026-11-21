@@ -1,6 +1,6 @@
 # fm_calidad (fm-calidad) · FM de V-UHF con mejor sonido en OpenWebRX+
 
-Versión 1.0 (21-11-2026). Probada en OpenWebRX+ 1.2.130 e instalada en el receptor de EA7CL.
+Versión 1.1 (21-11-2026). Probada en OpenWebRX+ 1.2.130 e instalada en el receptor de EA7CL.
 
 ## Qué fallaba en la FM original
 
@@ -19,7 +19,7 @@ En la cadena de cada oyente **sin decodificador digital**:
 
 ```
 selector a 48 kHz → demodulador FM (atan2) → de-énfasis NFM a 48 kHz → 48k→12k
-→ paso banda 200–4000 Hz (quita CTCSS y soplido) → nivelador suave → limitador blando
+→ paso banda 290–4000 Hz (quita CTCSS y soplido) → nivelador suave → limitador blando (tope 0,75)
 ```
 
 - El oyente recibe el mismo audio de 12 kHz de antes: **no gasta más ancho de banda de red**.
@@ -45,8 +45,27 @@ limpio). Original con filtro ±4 kHz; nueva con ±6 kHz.
 | 1 kHz, desv. 2,5 kHz, CNR 10 dB    | 20       | 20    |
 
 Con señal muy débil (solo ruido) las dos son iguales: ahí manda el ruido, no la cadena.
-CTCSS de 88,5 Hz: −43 dB en la original, −66 dB en la nueva.
+CTCSS de 88,5 Hz: −43 dB en la original, −66 dB en la 1.0 y más de −78 dB en la 1.1 (ver abajo).
 CPU: alrededor del 1 % de un núcleo de una Raspberry Pi 5 más por cada oyente en FM.
+
+## Cambios de la 1.1
+
+Tras medir en 144,975 MHz (subtono solo 18 dB bajo la voz y 27 muestras saturadas en 8 s):
+
+| Subtono / medida | 1.0 | 1.1 |
+|---|---:|---:|
+| 151 Hz | −15 dB | −89 dB |
+| 186 Hz | −8 dB | −78 dB |
+| 210 Hz | −5 dB | −97 dB |
+| 250 Hz | −1,5 dB | −36 dB |
+| Voz a 300 Hz | 0 dB | −3 dB |
+| Subtono de 151,4 Hz bajo la voz (banco) | 17 dB | 80 dB |
+| Pico máximo (banco) | −0,3 dBFS | −3,3 dBFS |
+
+- Paso alto a 290 Hz con un filtro de 511 coeficientes (21 ms de retardo en vez de 8).
+- Nivelador a 0,5 (antes 0,6) que, cuando hay que bajar, baja de golpe en vez de en rampa.
+- Limitador blando desde 0,6 que nunca pasa de 0,75 (unos 2,5 dB de margen; antes llegaba a 1,0).
+- La voz queda unos 1,5 dB más baja. Los números están al principio de `owrx_fmcalidad/nfm.py`.
 
 ## Instalar y quitar
 
@@ -63,7 +82,7 @@ bash fm-calidad.sh estado
   reaplicarse sola tras actualizar paquetes, pero **solo en versiones probadas** (`PROBADAS` en
   `fm-calidad.sh`; `aplicar --forzar` para probar en otra, bajo tu responsabilidad).
 - No toca la configuración de OpenWebRX (`/etc/openwebrx`, `/var/lib/openwebrx`).
-- Convive con `estereo_fm` (marcas distintas; en 1.2.130 owrx-estereo solo toca `dablin.py`).
+- Convive con `estereo_fm` (marcas distintas; en 1.2.130 owrx-estereo solo toca `dablin.py`) y con `am_calidad`.
 - Con `copia_owrx`, `lib-owrx.sh` guarda también `owrx_fmcalidad/` entre los archivos propios.
 - Después de instalar, Ctrl+F5 en el navegador (cambia `Demodulator.js`).
 

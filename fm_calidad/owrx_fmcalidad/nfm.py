@@ -6,7 +6,9 @@
 #
 # Aquí, en la cadena de cada oyente (sin decodificador digital):
 #   selector a 48 kHz -> FmDemod (atan2) -> de-énfasis NFM a 48 kHz -> 48k->12k
-#   -> paso banda 200-4000 Hz (quita CTCSS y soplido) -> nivelador suave -> limitador blando
+#   -> paso banda 290-4000 Hz (quita CTCSS y soplido) -> nivelador suave -> limitador blando
+# 1.1: paso alto a 290 Hz con filtro mas largo (todos los subtonos hasta 210 Hz < -78 dB),
+#      nivelador a 0,5 que baja de golpe y limitador que no pasa de 0,75 (unos 2,5 dB de margen).
 # Con un decodificador (packet, POCSAG, AIS...) o en los servicios de fondo se usa la cadena
 # original tal cual (mismas velocidades), para no cambiar nada a los decodificadores.
 import logging
@@ -16,8 +18,12 @@ from pycsdr.modules import NfmDeemphasis, FractionalDecimator, Agc, Limit
 from pycsdr.types import Format, AgcProfile
 
 IF_HQ = 48000          # velocidad de la FI para demodular
-AUDIO_LO = 200.0       # paso banda del audio (Hz)
+AUDIO_LO = 290.0       # paso banda del audio (Hz); 1.0: 200
 AUDIO_HI = 4000.0
+AUDIO_TAPS = 511       # largo del filtro (a 12 kHz, 21 ms de retardo); 1.0: 201
+NIVEL = 0.5            # pico que busca el nivelador; 1.0: 0,6
+LIM_RODILLA = 0.6      # el limitador empieza a actuar aqui; 1.0: 0,9
+LIM_TECHO = 0.75       # y nunca pasa de aqui (-2,5 dB del maximo); 1.0: 1,0
 
 
 def paso_banda(fs, f1, f2, n=201):
@@ -37,8 +43,8 @@ def paso_banda(fs, f1, f2, n=201):
 class AudioNfm(ThreadModule):
     """Filtro de audio + nivelador suave (sin distorsión) + limitador blando."""
 
-    def __init__(self, rate, gain=2.0, nivel=0.6, subida_db=3.0, rango_db=(-14.0, 4.0)):
-        self.taps = paso_banda(rate, AUDIO_LO, AUDIO_HI)
+    def __init__(self, rate, gain=2.0, nivel=NIVEL, subida_db=3.0, rango_db=(-14.0, 4.0)):
+        self.taps = paso_banda(rate, AUDIO_LO, AUDIO_HI, AUDIO_TAPS)
         self.hist = np.zeros(len(self.taps) - 1, dtype=np.float32)
         self.g0 = float(gain)                          # ganancia nominal
         self.g = self.g0
@@ -67,13 +73,16 @@ class AudioNfm(ThreadModule):
             g1 = min(self.g * self.paso, self.gmax) if pico * self.g * self.paso < self.nivel else self.g
             if pico * g1 > self.nivel * 1.4:            # demasiado fuerte: baja ya
                 g1 = max(self.gmin, self.nivel * 1.4 / max(pico, 1e-9))
-            out[i:i + len(b)] = b * np.linspace(self.g, g1, len(b), endpoint=False, dtype=np.float32)
+                out[i:i + len(b)] = b * g1              # 1.1: de golpe, sin rampa (no se escapa el pico)
+            else:
+                out[i:i + len(b)] = b * np.linspace(self.g, g1, len(b), endpoint=False, dtype=np.float32)
             self.g = g1
-        # limitador blando por encima de 0,9 (no pasa nunca de 1)
+        # limitador blando: desde LIM_RODILLA se curva y nunca pasa de LIM_TECHO
         a = np.abs(out)
-        m = a > 0.9
+        m = a > LIM_RODILLA
         if np.any(m):
-            out[m] = np.sign(out[m]) * (0.9 + 0.1 * np.tanh((a[m] - 0.9) / 0.1))
+            k = LIM_TECHO - LIM_RODILLA
+            out[m] = np.sign(out[m]) * (LIM_RODILLA + k * np.tanh((a[m] - LIM_RODILLA) / k))
         return out
 
     def run(self):

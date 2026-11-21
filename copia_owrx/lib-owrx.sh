@@ -54,6 +54,6 @@ duenos_como() {
 
 # Archivos añadidos a mano en las carpetas de OpenWebRX+ (plugins, imágenes...)
 propios() {
-    find $P/htdocs $P/owrx $( [ -d $P/owrx_fmcalidad ] && echo $P/owrx_fmcalidad ) -type f ! -path '*/__pycache__/*' ! -path '*.bak*' ! -name '*.orig' ! -name '*.antes-de-*' \
+    find $P/htdocs $P/owrx $( [ -d $P/owrx_fmcalidad ] && echo $P/owrx_fmcalidad ) $( [ -d $P/owrx_amcalidad ] && echo $P/owrx_amcalidad ) -type f ! -path '*/__pycache__/*' ! -path '*.bak*' ! -name '*.orig' ! -name '*.antes-de-*' \
         | sort | comm -23 - <(dpkg -L openwebrx | sort)
 }

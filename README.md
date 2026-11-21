@@ -32,6 +32,7 @@ Desarrollos para el receptor OpenWebRX+ de EA7CL (Málaga). Cada desarrollo va e
 | [`https/`](https/) | El receptor también por https en el puerto 8443 (certificado gratuito de Let's Encrypt que se renueva solo); el 8073 sigue igual. | — |
 | [`copia_owrx/`](copia_owrx/) | Copia completa de lo personalizado y actualización de OpenWebRX+ que lo conserva. Instrucciones en [LEEME.txt](copia_owrx/LEEME.txt). | — |
 | [`estereo_fm/`](estereo_fm/) | FM comercial y DAB+ en estéreo real (en 1.2.130+ con el modo BCFM y el estéreo propio de OpenWebRX), botón ESTÉREO/MONO y medidores L/R en MODOS. Se vuelve a poner solo tras actualizar con apt. | ver [CHANGELOG](estereo_fm/CHANGELOG.md) |
+| [`fm_calidad/`](fm_calidad/) | FM de V-UHF con mejor sonido: la FM estrecha se demodula a 48 kHz (no a 12), con filtro de ±6 kHz por defecto y sin la distorsión del AGC. Mismo ancho de banda de red. Se vuelve a poner sola tras actualizar con apt. | ver [CHANGELOG](fm_calidad/CHANGELOG.md) |
 
 Cada carpeta tiene su **instalador**, su **explicación** (README) y su **desinstalador**. Los desinstaladores
 no borran nada: guardan `init.js` y el plugin en `/home/ea7cl/desinstalado-<plugin>-FECHA` y al terminar

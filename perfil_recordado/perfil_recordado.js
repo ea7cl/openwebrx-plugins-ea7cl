@@ -8,7 +8,11 @@
  * Lo recordado se guarda solo en el navegador del oyente (localStorage).
  */
 Plugins.perfil_recordado = Plugins.perfil_recordado || {};
-Plugins.perfil_recordado._version = 0.1;
+Plugins.perfil_recordado._version = 0.3;
+// EA7CL: enlace con frecuencia (#freq=...): al entrar por un enlace, no volver al perfil recordado
+Plugins.perfil_recordado._enlace = +((location.hash.match(/freq=(\d+)/) || [])[1] || 0);
+// 0.3: modo del enlace (#...,mod=nfm) para usarlo si hay que saltar de perfil
+Plugins.perfil_recordado._enlaceModo = (location.hash.match(/[#,]mod=([a-z0-9]+)/i) || [])[1] || '';
 Plugins.perfil_recordado.no_css = true;
 
 // dias que se recuerda el perfil al abrir la web de nuevo
@@ -71,7 +75,33 @@ Plugins.perfil_recordado._fin = function () {
 	this._restaurando = false;
 };
 
+// 0.3: si el enlace pide una frecuencia que no esta en el perfil inicial,
+// ir al perfil que la cubra (lista de profile_jump). Devuelve true si salta.
+Plugins.perfil_recordado._irAlEnlace = function () {
+	var f = this._enlace, m = this._enlaceModo;
+	this._enlace = 0;
+	if (!f || this._enVentana(f)) return false;   // ya la tiene el perfil inicial
+	var pj = Plugins.profile_jump;
+	if (!pj || typeof pj.find !== 'function' || !pj.profiles || !pj.profiles.length) return false;
+	var destino = pj.find(f);
+	var $l = this._lista();
+	if (!destino || destino.key === $l.val()) return false;
+	$l.val(destino.key);
+	try { sdr_profile_changed(); } catch (e) { return false; }
+	this._sintonizar({ p: destino.key, f: f, m: m });
+	return true;
+};
+
 Plugins.perfil_recordado._restaurar = function (reconexion) {
+	// entrada por enlace #freq=: manda el enlace, no lo recordado
+	if (!reconexion && this._enlace) {
+		var d0 = this._leer();
+		if (!d0 || !d0.p || Math.abs(this._enlace - (d0.f || 0)) > 50) {
+			if (!this._irAlEnlace()) this._fin();
+			return;
+		}
+		this._enlace = 0;   // el enlace coincide con lo recordado (p. ej. F5): seguir normal
+	}
 	var d = this._leer();
 	var $l = this._lista();
 	var actual = $l.val();
@@ -106,7 +136,8 @@ Plugins.perfil_recordado.init = function () {
 		window.on_ws_opened = function () {
 			self._pendiente = true;
 			self._restaurando = false;
-			self._reconexion = true;
+			// 0.3: solo es reconexion si antes se corto (la primera apertura no lo es)
+			self._reconexion = !!self._cortado;
 			self._abierto = Date.now();
 			return original.apply(this, arguments);
 		};
@@ -118,6 +149,7 @@ Plugins.perfil_recordado.init = function () {
 		window.on_ws_closed = function () {
 			self._pendiente = true;
 			self._restaurando = true;
+			self._cortado = true;
 			return cierre.apply(this, arguments);
 		};
 		window.on_ws_closed._ea7 = true;

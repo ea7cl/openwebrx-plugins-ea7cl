@@ -1,7 +1,7 @@
 # perfil_recordado — vuelve al último perfil (EA7CL)
 
-Plugin de receptor para OpenWebRX+, versión **0.1**. Copiado del servidor `openwebrx` el 3-nov-2026,
-idéntico al que está funcionando (comprobado con SHA-256).
+Plugin de receptor para OpenWebRX+, versión **0.3** (21-nov-2026), idéntica a la que funciona en el
+servidor `openwebrx`.
 
 ## Qué hace
 
@@ -11,6 +11,12 @@ idéntico al que está funcionando (comprobado con SHA-256).
   frecuencia en vez de al primero.
 - Con `EVITAR_SDR_COMPARTIDO = true` no devuelve solo a un perfil de un SDR que tiene varios perfiles (🔻),
   para no mover ese SDR a otros oyentes al entrar.
+- **Enlaces con frecuencia** (0.2/0.3): si alguien abre un enlace como `.../#freq=144975000,mod=nfm`, manda
+  el enlace y no lo recordado. Si esa frecuencia no está en el perfil con el que se entra, salta al perfil
+  que la cubre (con la lista `profiles.json` de [`profile_jump`](../profile_jump/)) y pone la frecuencia
+  y el modo del enlace. F5 sigue igual, porque OpenWebRX deja en la dirección la frecuencia actual.
+- Solo cuenta como **reconexión** si antes se cortó la conexión (0.3; antes, la primera apertura de la
+  página también contaba como reconexión y por eso no se respetaba el enlace).
 
 ## Archivos
 

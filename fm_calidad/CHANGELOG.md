@@ -1,5 +1,12 @@
 # fm_calidad (fm-calidad) · cambios
 
+## 1.2 · 2026-11-21
+- Arreglo: al parar la cadena de un oyente (cambio de perfil o de modo, oyente que se va) el hilo
+  del audio NFM podía escribir cuando OpenWebRX ya había quitado la salida y dejaba en el registro
+  `AttributeError: 'NoneType' object has no attribute 'write'`. No cortaba nada. Ahora termina sin
+  error. El sonido no cambia.
+- Probada en la Pi e instalada en el receptor de EA7CL.
+
 ## 1.1 · 2026-11-21
 - Paso alto del audio a 290 Hz (antes 200) con filtro de 511 coeficientes: los subtonos CTCSS
   hasta 210 Hz quedan por debajo de −78 dB (antes de −5 a −67 dB).

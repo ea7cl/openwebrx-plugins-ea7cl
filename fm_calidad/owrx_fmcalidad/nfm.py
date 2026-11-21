@@ -99,9 +99,12 @@ class AudioNfm(ThreadModule):
             except Exception:
                 logging.getLogger("owrx_fmcalidad").exception("error en el audio NFM")
                 y = np.clip(x, -1, 1)                   # que no se corte el audio
+            w = self.writer                         # 1.2: al parar la cadena, OpenWebRX lo deja en None
+            if w is None:
+                break
             try:
-                self.writer.write(y.tobytes())
-            except BrokenPipeError:
+                w.write(y.tobytes())
+            except (BrokenPipeError, AttributeError, ValueError):
                 break
 
 

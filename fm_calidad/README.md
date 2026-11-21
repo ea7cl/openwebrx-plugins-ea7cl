@@ -1,6 +1,6 @@
 # fm_calidad (fm-calidad) · FM de V-UHF con mejor sonido en OpenWebRX+
 
-Versión 1.1 (21-11-2026). Probada en OpenWebRX+ 1.2.130 e instalada en el receptor de EA7CL.
+Versión 1.2 (21-11-2026). Probada en OpenWebRX+ 1.2.130 e instalada en el receptor de EA7CL.
 
 ## Qué fallaba en la FM original
 

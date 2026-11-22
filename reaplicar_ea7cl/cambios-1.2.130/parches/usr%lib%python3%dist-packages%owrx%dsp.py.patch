@@ -1,0 +1,14 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/owrx/dsp.py	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/owrx/dsp.py	2026-11-21 20:42:49.682131802 +0100
+@@ -813,6 +813,11 @@
+         elif mod == "meshtastic":
+             from csdr.chain.lora import MeshtasticDemodulator
+             return MeshtasticDemodulator()
++        # EA7CL meshtastic_narrow (inicio)
++        elif mod == "meshtastic-narrow":
++            from csdr.chain.lora import MeshtasticNarrowDemodulator
++            return MeshtasticNarrowDemodulator()
++        # EA7CL meshtastic_narrow (fin)
+         elif mod == "meshcore":
+             from csdr.chain.lora import MeshcoreDemodulator
+             return MeshcoreDemodulator()

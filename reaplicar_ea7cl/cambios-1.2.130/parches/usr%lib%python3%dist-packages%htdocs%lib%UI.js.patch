@@ -1,0 +1,11 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/htdocs/lib/UI.js	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/htdocs/lib/UI.js	2026-10-27 18:27:26.545803544 +0100
+@@ -318,7 +318,7 @@
+     if (this.nrThreshold != x) {
+         this.nrThreshold = x;
+         LS.save('nr_threshold', x);
+-        $('#openwebrx-panel-nr').attr('title', 'Noise reduction level (' + x + ' dB)').val(x);
++        $('#openwebrx-panel-nr').attr('title', 'Nivel de reducción de ruido (' + x + ' dB)').val(x);
+         this.updateNR();
+     }
+ };

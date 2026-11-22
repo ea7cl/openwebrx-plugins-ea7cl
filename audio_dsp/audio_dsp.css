@@ -783,3 +783,27 @@
   background: #e8dab0;
   display: block;
 }
+
+/* ───────────────────────────────────────
+   EA7CL: NR con red neuronal (botón IA + indicador de voz)
+   ─────────────────────────────────────── */
+#adsp-nr-learn { margin-left: 0; }
+#adsp-nr-ai { margin-right: 4px; }
+#adsp-nr-ai.adsp-ai-on {
+  color: #0b1a14;
+  background: #4fd8a8;
+  border-color: #4fd8a8;
+  box-shadow: 0 0 8px rgba(80, 220, 170, 0.45);
+}
+#adsp-nr-ai.adsp-ai-off { opacity: 0.35; cursor: not-allowed; }
+#adsp-nr-learn.adsp-ai-hide { visibility: hidden; }
+.adsp-ai-vad {
+  display: none;
+  width: 34px; height: 6px; margin-right: 6px; flex-shrink: 0;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(50, 80, 110, 0.5);
+  overflow: hidden;
+}
+.adsp-ai-vad.on { display: inline-block; }
+.adsp-ai-vad i { display: block; height: 100%; width: 0; background: #4fd8a8; transition: width 0.15s; }

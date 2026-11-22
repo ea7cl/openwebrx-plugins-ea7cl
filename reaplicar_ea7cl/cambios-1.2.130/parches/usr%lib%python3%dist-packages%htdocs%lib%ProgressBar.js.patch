@@ -1,0 +1,104 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/htdocs/lib/ProgressBar.js	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/htdocs/lib/ProgressBar.js	2026-10-27 18:27:26.543803523 +0100
+@@ -36,7 +36,7 @@
+ AudioBufferProgressBar.prototype = new ProgressBar();
+ 
+ AudioBufferProgressBar.prototype.getDefaultText = function() {
+-    return 'Audio buffer [0 ms]';
++    return 'Búfer de audio [0 ms]';
+ };
+ 
+ AudioBufferProgressBar.prototype.setSampleRate = function(sampleRate) {
+@@ -49,10 +49,10 @@
+     var underrun = audio_buffer_value === 0;
+     var text = "buffer";
+     if (overrun) {
+-        text = "overrun";
++        text = "desbordamiento";
+     }
+     if (underrun) {
+-        text = "underrun";
++        text = "insuficiente";
+     }
+     this.set(audio_buffer_value, "Audio " + text + " [" + (audio_buffer_value).toFixed(1) + " s]", overrun || underrun);
+ };
+@@ -65,12 +65,12 @@
+ NetworkSpeedProgressBar.prototype = new ProgressBar();
+ 
+ NetworkSpeedProgressBar.prototype.getDefaultText = function() {
+-    return 'Network usage [0 kbps]';
++    return 'Uso de la red [0 kbps]';
+ };
+ 
+ NetworkSpeedProgressBar.prototype.setSpeed = function(speed) {
+     var speedInKilobits = speed * 8 / 1000;
+-    this.set(speedInKilobits / 2000, "Network usage [" + speedInKilobits.toFixed(1) + " kbps]", false);
++    this.set(speedInKilobits / 2000, "Uso de la red [" + speedInKilobits.toFixed(1) + " kbps]", false);
+ };
+ 
+ AudioSpeedProgressBar = function(el) {
+@@ -80,11 +80,11 @@
+ AudioSpeedProgressBar.prototype = new ProgressBar();
+ 
+ AudioSpeedProgressBar.prototype.getDefaultText = function() {
+-    return 'Audio stream [0 kbps]';
++    return 'Flujo de audio [0 kbps]';
+ };
+ 
+ AudioSpeedProgressBar.prototype.setSpeed = function(speed) {
+-    this.set(speed / 1000000, "Audio stream [" + (speed / 1000).toFixed(0) + " kbps]", false);
++    this.set(speed / 1000000, "Flujo de audio [" + (speed / 1000).toFixed(0) + " kbps]", false);
+ };
+ 
+ AudioOutputProgressBar = function(el, sampleRate) {
+@@ -94,7 +94,7 @@
+ AudioOutputProgressBar.prototype = new ProgressBar();
+ 
+ AudioOutputProgressBar.prototype.getDefaultText = function() {
+-    return 'Audio output [0 sps]';
++    return 'Salida de audio [0 sps]';
+ };
+ 
+ AudioOutputProgressBar.prototype.setSampleRate = function(sampleRate) {
+@@ -103,7 +103,7 @@
+ };
+ 
+ AudioOutputProgressBar.prototype.setAudioRate = function(audioRate) {
+-    this.set(audioRate / this.maxRate, "Audio output [" + (audioRate / 1000).toFixed(1) + " ksps]", audioRate > this.maxRate || audioRate < this.minRate);
++    this.set(audioRate / this.maxRate, "Salida de audio [" + (audioRate / 1000).toFixed(1) + " ksps]", audioRate > this.maxRate || audioRate < this.minRate);
+ };
+ 
+ ClientsProgressBar = function(el) {
+@@ -115,7 +115,7 @@
+ ClientsProgressBar.prototype = new ProgressBar();
+ 
+ ClientsProgressBar.prototype.getDefaultText = function() {
+-    return 'Clients [1]';
++    return 'Clientes [1]';
+ };
+ 
+ ClientsProgressBar.prototype.setClients = function(clients) {
+@@ -129,7 +129,7 @@
+ };
+ 
+ ClientsProgressBar.prototype.render = function() {
+-    this.set(this.clients / this.maxClients, "Clients [" + this.clients + "]", this.clients > this.maxClients * 0.85);
++    this.set(this.clients / this.maxClients, "Clientes [" + this.clients + "]", this.clients > this.maxClients * 0.85);
+ };
+ 
+ CpuProgressBar = function(el) {
+@@ -139,12 +139,12 @@
+ CpuProgressBar.prototype = new ProgressBar();
+ 
+ CpuProgressBar.prototype.getDefaultText = function() {
+-    return 'Server CPU [0%]';
++    return 'CPU del servidor [0%]';
+ };
+ 
+ CpuProgressBar.prototype.setUsage = function(usage) {
+     const temp = this.temp? "/" + this.temp + "&deg;C" : "";
+-    this.set(usage, "Server CPU [" + Math.round(usage * 100) + "%" + temp + "]", usage > .85);
++    this.set(usage, "CPU del servidor [" + Math.round(usage * 100) + "%" + temp + "]", usage > .85);
+ };
+ 
+ CpuProgressBar.prototype.setTemp = function(temp) {

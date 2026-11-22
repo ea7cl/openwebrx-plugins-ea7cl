@@ -1,0 +1,109 @@
+#!/bin/bash
+# reaplicar_ea7cl (EA7CL) · vuelve a poner tus cambios propios en OpenWebRX+ tras cada actualización.
+#
+#   reaplicar_ea7cl guardar   guarda tus cambios actuales (los compara con el paquete original)
+#   reaplicar_ea7cl estado    dice qué cambios están puestos
+#   reaplicar_ea7cl aplicar   pone los que falten (apt lo hace solo tras cada actualización)
+#
+# No guarda lo que ya gestionan fm-calidad, am-calidad y owrx-estereo (tienen su propio aviso de apt).
+# Cambios guardados en /usr/local/share/reaplicar-ea7cl ; registro en /var/log/reaplicar_ea7cl.log
+# Copias antes de tocar nada: /var/backups/reaplicar-ea7cl/<versión de OpenWebRX>/
+ACCION="${1:-estado}"; SIL=""; [ "$2" = "--silencioso" ] && SIL=1
+BASE="${RE_BASE:-/usr/local/share/reaplicar-ea7cl}"
+LOG="${RE_LOG:-/var/log/reaplicar_ea7cl.log}"
+COPIAS="${RE_COPIAS:-/var/backups/reaplicar-ea7cl}"
+say() { [ -n "$SIL" ] || echo "$@"; }
+log() { echo "$(date '+%F %T') $*" >> "$LOG"; say "$*"; }
+[ "$(id -u)" = 0 ] || { echo "Hay que ejecutarlo como root (sudo su)"; exit 1; }
+command -v patch >/dev/null || { echo "Falta el programa patch (apt install patch)"; exit 1; }
+VER="$(dpkg-query -W -f='${Version}' openwebrx 2>/dev/null || echo desconocida)"
+
+guardar() {
+  local D O NUEVO rc
+  D=$(ls /var/cache/apt/archives/openwebrx_${VER}_*.deb /tmp/openwebrx_${VER}_*.deb 2>/dev/null | head -1)
+  if [ -z "$D" ]; then
+    (cd /tmp && apt-get download "openwebrx=$VER" >/dev/null 2>&1)
+    D=$(ls /tmp/openwebrx_${VER}_*.deb 2>/dev/null | head -1)
+  fi
+  [ -n "$D" ] || { echo "No consigo el paquete original de OpenWebRX $VER; no se ha cambiado nada"; exit 1; }
+  O=$(mktemp -d); dpkg-deb -x "$D" "$O"
+  dpkg --verify openwebrx | awk '$2!="c"{print $NF}' > "$O/.lista"
+  NUEVO="$BASE.nuevo"; rm -rf "$NUEVO"; mkdir -p "$NUEVO/parches" "$NUEVO/copias"
+  python3 -I - "$O" "$NUEVO" <<'PY'
+import os, sys, subprocess, shutil
+O, N = sys.argv[1], sys.argv[2]
+MARCAS = ("fm-calidad (EA7CL)", "am-calidad (EA7CL)", "owrx-estereo (EA7CL)")
+TEXTO = ('.py', '.js', '.css', '.html', '.json', '.txt', '.svg')
+def nombre(f): return f.strip('/').replace('/', '%')
+for f in [l.strip() for l in open(os.path.join(O, '.lista')) if l.strip()]:
+    orig = O + f
+    if not os.path.isfile(f) or not os.path.isfile(orig):
+        continue
+    if not f.endswith(TEXTO):
+        shutil.copy2(f, os.path.join(N, 'copias', nombre(f)))
+        print("copia completa ", f)
+        continue
+    r = subprocess.run(['diff', '-u', orig, f], capture_output=True, text=True, errors='replace')
+    if r.returncode != 1:
+        continue
+    lineas = r.stdout.splitlines(keepends=True)
+    cab, trozos, cur = lineas[:2], [], None
+    for l in lineas[2:]:
+        if l.startswith('@@'):
+            cur = [l]; trozos.append(cur)
+        elif cur is not None:
+            cur.append(l)
+    buenos = [t for t in trozos if not any(m in ''.join(t) for m in MARCAS)]
+    if not buenos:
+        print("omitido        ", f, "(lo gestiona fm/am-calidad u owrx-estereo)")
+        continue
+    with open(os.path.join(N, 'parches', nombre(f) + '.patch'), 'w', encoding='utf-8') as o:
+        o.write(''.join(cab) + ''.join(''.join(t) for t in buenos))
+    print("parche          ", f, "(%d cambios)" % len(buenos))
+PY
+  rc=$?; rm -rf "$O"
+  if [ $rc != 0 ]; then echo "Error al guardar; no se ha cambiado nada"; rm -rf "$NUEVO"; exit 1; fi
+  [ -d "$BASE" ] && mv "$BASE" "$BASE.anterior-$(date +%F-%H%M%S)"
+  mv "$NUEVO" "$BASE"
+  log "guardados los cambios de OpenWebRX $VER: $(ls "$BASE/parches" | wc -l) parches y $(ls "$BASE/copias" | wc -l) copias completas"
+}
+
+recorrer() {   # $1 = aplicar | estado
+  local p c f n CAMBIADO=0 MAL=0
+  [ -d "$BASE/parches" ] || { say "No hay cambios guardados todavía: ejecuta  reaplicar_ea7cl guardar"; exit 0; }
+  for p in "$BASE"/parches/*.patch; do
+    [ -e "$p" ] || continue
+    n=$(basename "$p" .patch); f="/$(echo "$n" | tr '%' '/')"
+    if [ ! -f "$f" ]; then log "FALTA el archivo $f"; MAL=1; continue; fi
+    if patch -R --dry-run -s -f "$f" < "$p" >/dev/null 2>&1; then say "puesto      $f"; continue; fi
+    if ! patch --dry-run -s -f "$f" < "$p" >/dev/null 2>&1; then
+      log "NO ENCAJA   $f (OpenWebRX $VER ha cambiado esa parte: revisar a mano)"; MAL=1; continue
+    fi
+    if [ "$1" = aplicar ]; then
+      mkdir -p "$COPIAS/$VER"; cp -p "$f" "$COPIAS/$VER/$n"
+      if patch -s -f --no-backup-if-mismatch "$f" < "$p" >/dev/null 2>&1; then log "puesto de nuevo  $f"; CAMBIADO=1
+      else log "ERROR al poner $f (copia en $COPIAS/$VER/$n)"; MAL=1; fi
+    else say "SIN PONER   $f"; MAL=1; fi
+  done
+  for c in "$BASE"/copias/*; do
+    [ -e "$c" ] || continue
+    n=$(basename "$c"); f="/$(echo "$n" | tr '%' '/')"
+    if cmp -s "$c" "$f"; then say "puesto      $f"; continue; fi
+    if [ "$1" = aplicar ]; then
+      mkdir -p "$COPIAS/$VER"; [ -f "$f" ] && cp -p "$f" "$COPIAS/$VER/$n"
+      cp -p "$c" "$f" && { log "copiado de nuevo $f"; CAMBIADO=1; }
+    else say "SIN PONER   $f"; MAL=1; fi
+  done
+  if [ "$1" = aplicar ] && [ $CAMBIADO = 1 ] && [ -z "$RE_SIN_REINICIO" ]; then
+    systemctl restart openwebrx && log "OpenWebRX reiniciado para cargar los cambios"
+  fi
+  say "OpenWebRX $VER · $([ $MAL = 0 ] && echo 'todo puesto' || echo 'HAY AVISOS (mira arriba)')"
+}
+
+case "$ACCION" in
+  guardar) guardar ;;
+  aplicar) recorrer aplicar ;;
+  estado)  recorrer estado ;;
+  *) echo "uso: reaplicar_ea7cl guardar | estado | aplicar" ;;
+esac
+exit 0

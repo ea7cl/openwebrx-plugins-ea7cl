@@ -1,0 +1,15 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/htdocs/lib/Waterfall.js	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/htdocs/lib/Waterfall.js	2026-10-27 18:27:26.546803554 +0100
+@@ -85,10 +85,10 @@
+ Waterfall.updateSliders = function() {
+     $('#openwebrx-waterfall-color-max')
+         .val(this.levels.max)
+-        .attr('title', 'Waterfall maximum level (' + Math.round(this.levels.max) + ' dB)');
++        .attr('title', 'Nivel máximo de cascada (' + Math.round(this.levels.max) + ' dB)');
+     $('#openwebrx-waterfall-color-min')
+         .val(this.levels.min)
+-        .attr('title', 'Waterfall minimum level (' + Math.round(this.levels.min) + ' dB)');
++        .attr('title', 'Nivel mínimo de cascada (' + Math.round(this.levels.min) + ' dB)');
+ };
+ 
+ // Update automatic min/max levels.

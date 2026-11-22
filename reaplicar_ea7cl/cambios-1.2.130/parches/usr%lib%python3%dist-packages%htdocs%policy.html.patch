@@ -1,0 +1,23 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/htdocs/policy.html	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/htdocs/policy.html	2026-11-18 01:33:38.305461620 +0100
+@@ -10,15 +10,14 @@
+ <body style="background-color:#000000;">
+ ${header}
+ <div style="margin: 20% 20% 20% 20%;">
+-<h1 style="color:#ff0000;">OpenWebRX+ Usage Policy</h1>
++<h1 style="color:#ff0000;">OpenWebRX+ Política de uso</h1>
+ <h3 style="text-align:justify;">
+-Please, do not leave the receiver unattended for prolonged time. The
+-receiver will stop after a while to allow other users to connect.
+-Consider visiting other receivers around the world:
++Por favor, no deje el receptor desatendido por tiempo prolongado. El
++ receptor se detendrá automáticamente después de 2 horas, para permitir que se conecten el mayor número de ususarios y haya el menor uso de la CPU. Gracias
+ </h3>
+ <h3 style="margin-top:5%;">
+-<span style="float:left;"><a href="http://rx.linkfanel.net/">Linkfanel</a></span>
+-<span style="float:right;"><a href="https://www.receiverbook.de/map">Receiverbook</a></span>
++<span style="float:left;"><a href="https://www.receiverbook.de/map">Mapa de receptores</a></span>
++<span style="float:right;"><a href="https://ea7cl-sdr.duckdns.org:8443">Reconectar</a></span>
+ </h3>
+ </div>
+ </body>

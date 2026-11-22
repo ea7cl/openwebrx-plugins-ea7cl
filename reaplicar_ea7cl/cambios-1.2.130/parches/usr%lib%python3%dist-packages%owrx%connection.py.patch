@@ -1,0 +1,65 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/owrx/connection.py	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/owrx/connection.py	2026-11-07 12:21:31.527246331 +0100
+@@ -1,6 +1,7 @@
+ from owrx.details import ReceiverDetails
+ from owrx.dsp import DspManager
+ from owrx.cpu import CpuUsageThread
++from owrx.sessionstats import SessionStatsThread
+ from owrx.sdr import SdrService
+ from owrx.source import SdrSourceState, SdrClientClass, SdrSourceEventClient
+ from owrx.client import ClientRegistry, TooManyClientsException, BannedClientException
+@@ -173,11 +174,11 @@
+         try:
+             ClientRegistry.getSharedInstance().addClient(self)
+         except TooManyClientsException:
+-            self.write_backoff_message("Too many clients")
++            self.write_backoff_message("Demasiados clientes")
+             self.close()
+             raise
+         except BannedClientException:
+-            self.write_backoff_message("Client address banned")
++            self.write_backoff_message("Dirección de cliente prohibida")
+             self.close()
+             raise
+ 
+@@ -197,6 +198,7 @@
+         self._sendProfiles()
+ 
+         CpuUsageThread.getSharedInstance().add_client(self)
++        SessionStatsThread.getSharedInstance().add_client(self)
+ 
+     def setupStack(self):
+         stack = PropertyStack()
+@@ -290,18 +292,18 @@
+             self.handleSdrAvailable()
+ 
+     def onFail(self):
+-        logger.warning('SDR device "%s" has failed, selecting new device', self.sdr.getName())
+-        self.write_log_message('SDR device "{0}" has failed, selecting new device'.format(self.sdr.getName()))
++        logger.warning('El dispositivo SDR "%s" ha fallado, seleccionando un nuevo dispositivo', self.sdr.getName())
++        self.write_log_message('El dispositivo SDR "{0}" ha fallado, seleccionando un nuevo dispositivo'.format(self.sdr.getName()))
+         self.setSdr()
+ 
+     def onDisable(self):
+-        logger.warning('SDR device "%s" was disabled, selecting new device', self.sdr.getName())
+-        self.write_log_message('SDR device "{0}" was disabled, selecting new device'.format(self.sdr.getName()))
++        logger.warning('El dispositivo SDR "%s" fue deshabilitado, seleccionando un nuevo dispositivo', self.sdr.getName())
++        self.write_log_message('El dispositivo SDR "{0}" fue deshabilitado, seleccionando un nuevo dispositivo'.format(self.sdr.getName()))
+         self.setSdr()
+ 
+     def onShutdown(self):
+-        logger.warning('SDR device "%s" is shutting down, selecting new device', self.sdr.getName())
+-        self.write_log_message('SDR device "{0}" is shutting down, selecting new device'.format(self.sdr.getName()))
++        logger.warning('El dispositivo SDR "%s" se está apagando, seleccionando un nuevo dispositivo', self.sdr.getName())
++        self.write_log_message('El dispositivo SDR "{0}" se está apagando, seleccionando un nuevo dispositivo'.format(self.sdr.getName()))
+         self.setSdr()
+ 
+     def getClientClass(self) -> SdrClientClass:
+@@ -462,6 +464,7 @@
+             self.sdr.removeClient(self)
+         self.stopDsp()
+         CpuUsageThread.getSharedInstance().remove_client(self)
++        SessionStatsThread.getSharedInstance().remove_client(self)
+         ClientRegistry.getSharedInstance().removeClient(self)
+         while self.configSubs:
+             self.configSubs.pop().cancel()

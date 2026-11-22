@@ -1,7 +1,7 @@
 /*
  * audio_dsp - Audio DSP Plugin for OpenWebRx+
  * Real-time audio spectrum analyzer + parametric EQ + filters
- * Version 2.4
+ * Version 2.4 + EA7CL (NR con red neuronal RNNoise, botón IA)
  */
 
 /* IMPORTANT: do NOT define 'no_css' here — the OWRX+ plugin loader
@@ -31,7 +31,7 @@ Plugins.audio_dsp.init = function () {
     notch_freq: 1000, notch_q: 10, notch_on: false, notch_auto: false,
     peak_freq: 1500, peak_gain: 0, peak_q: 1.5, peak_on: false,
     comp_on: false, comp_threshold: -30, comp_ratio: 6,
-    nr_on: false, nr_strength: 50,
+    nr_on: false, nr_strength: 50, nr_ai: false,
     auto_preset: false,
     eq_on: false, eq_g: [0,0,0,0,0,0,0,0,0,0],
     nb_on: false, nb_th: 6,
@@ -64,10 +64,13 @@ Plugins.audio_dsp.init = function () {
   };
   dsp._ea7aplicar = function (nombre) {
     var d = this, p = d._ea7presets[nombre], auto = d.settings.auto_preset;
+    var ai = !!d.settings.nr_ai;   // la elección IA del oyente se conserva entre modos
     var base = d.defaults;
-    d.defaults = Object.assign({}, base, p || {}, { auto_preset: auto });
+    d.defaults = Object.assign({}, base, p || {}, { auto_preset: auto, nr_ai: ai });
     try { d._applyPreset('reset'); } finally { d.defaults = base; }
     d.settings.auto_preset = auto;
+    d.settings.nr_ai = ai;
+    d._syncAI();
     $('#adsp-auto-preset').prop('checked', auto);
     var on = !!p;
     d.enabled = on;
@@ -114,6 +117,18 @@ Plugins.audio_dsp.init = function () {
       d._ea7aplicar(sec ? 'dig' : (mapa[modo] || 'dig'));
     }, 1000);
   };
+  // ===== fin EA7CL =====
+
+  // ===== EA7CL: NR con red neuronal (RNNoise) — botón IA junto a LEARN =====
+  $(document).on('click', '#adsp-nr-ai', function (e) {
+    e.stopPropagation(); e.preventDefault();
+    if ($(this).hasClass('adsp-ai-off')) return;          // RNNoise no disponible
+    dsp.settings.nr_ai = !dsp.settings.nr_ai;
+    if (dsp.settings.nr_ai) dsp.settings.nr_on = true;   // IA implica NR encendido
+    dsp._syncAI();
+    dsp._sendNRParams();
+    dsp._reconnect();
+  });
   // ===== fin EA7CL =====
 
   $(document).on('event:owrx_initialized', function () {
@@ -165,6 +180,7 @@ Plugins.audio_dsp._syncUI = function () {
   $('#adsp-nr-on').prop('checked', s.nr_on);
   $('#adsp-nr-strength').val(s.nr_strength);
   $('#adsp-nr-val').text(s.nr_strength + '%');
+  dsp._syncAI();   // EA7CL: botón IA
   $('#adsp-hp-on').prop('checked', s.hp_on);
   $('#adsp-hp-freq').val(s.hp_freq);
   $('#adsp-hp-val').text(s.hp_freq + ' Hz');
@@ -722,6 +738,7 @@ registerProcessor('adsp-lms-processor',ADSPLMS);
   } catch (e) {
     console.warn('[audio_dsp] NR unavailable:', e);
   }
+  dsp._rnnBuild(ctx);   // EA7CL: NR con red neuronal (RNNoise)
 
   // ── 10-band graphic EQ (peaking biquads in series) ──
   dsp.eqBands = [];
@@ -778,10 +795,12 @@ Plugins.audio_dsp._sendNRParams = function () {
   var dsp = this;
   if (!dsp.filters.nr) return;
   var v = dsp.settings.nr_strength;              // 0..100
+  // EA7CL: con IA activa, el NR espectral se queda apagado (solo NB si está puesto)
+  if (dsp.filters.rnn) dsp.filters.rnn.port.postMessage({ mix: v / 100 });
   dsp.filters.nr.port.postMessage({
     strength: 1.5 + v * 0.045,                   // 1.5 .. 6.0 over-subtraction (beta)
     floor:    0.30 - v * 0.0026,                 // 0.30 .. 0.04 gain floor
-    nrOn: !!dsp.settings.nr_on,
+    nrOn: !!dsp.settings.nr_on && !dsp._aiActivo(),
     nbOn: !!dsp.settings.nb_on,
     nbTh: dsp.settings.nb_th
   });
@@ -827,7 +846,10 @@ Plugins.audio_dsp._reconnect = function () {
   }
 
   var chain = [];
-  if ((dsp.settings.nr_on || dsp.settings.nb_on) && dsp.nrReady && dsp.filters.nr) chain.push(dsp.filters.nr); // NR/NB first
+  // EA7CL: NB primero (quita impulsos), luego NR: espectral o red neuronal (IA)
+  var aiOn = dsp._aiActivo();
+  if (((dsp.settings.nr_on && !aiOn) || dsp.settings.nb_on) && dsp.nrReady && dsp.filters.nr) chain.push(dsp.filters.nr);
+  if (aiOn) chain.push(dsp.filters.rnn);
   if (dsp.settings.lms_on && dsp.lmsReady && dsp.filters.lms) chain.push(dsp.filters.lms); // adaptive filter
   if (dsp.settings.hp_on)    chain.push(dsp.filters.hp);
   if (dsp.settings.lp_on)    chain.push(dsp.filters.lp);
@@ -1386,7 +1408,9 @@ Plugins.audio_dsp._buildUI = function () {
             '<input type="checkbox" id="adsp-nr-on" />' +
             '<span class="adsp-filter-icon">&#10057;</span>' +
             '<span class="adsp-filter-name" title="Ephraim-Malah spectral NR: removes steady hiss/background while preserving voice. Press LEARN during a pause.">Noise Reduction</span>' +
+            '<button type="button" class="adsp-mini-btn" id="adsp-nr-ai" title="Reducción de ruido con red neuronal (RNNoise). Limpia mucho la voz en SSB, AM y FM. No usar en CW ni en modos digitales: los quita como si fueran ruido. El deslizador Level marca cuánto ruido se quita.">IA</button>' +
             '<button type="button" class="adsp-mini-btn" id="adsp-nr-learn" title="Re-learn noise profile: press during a pause with noise only">LEARN</button>' +
+            '<span class="adsp-ai-vad" id="adsp-nr-vad" title="Voz detectada por la red neuronal"></span>' +
             '<span class="adsp-val" id="adsp-nr-val">50%</span>' +
           '</label>' +
           '<div class="adsp-slider-group">' +
@@ -1900,5 +1924,251 @@ Plugins.audio_dsp._makeDraggable = function () {
       el.style.bottom = 'auto';
     };
     document.onmouseup = function () { document.onmousemove = null; document.onmouseup = null; };
+  });
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//  EA7CL: NR con red neuronal (RNNoise, Jitsi rnnoise-wasm 0.2.1)
+//  - rnnoise.wasm se carga de la carpeta del complemento (112 KB)
+//  - trabaja a 48 kHz en tramas de 480; si el audio va a otra frecuencia
+//    (44,1 / 96 kHz) se re-muestrea dentro del procesador
+//  - v2 "plantilla": la salida de la IA decide, por frecuencias y suavizado,
+//    cuánto del sonido original pasa (sin golpes de ruido, voz natural)
+//  - Level (nr_strength): cuánto baja el ruido como máximo:
+//    0 % = -6 dB, 50 % = -18 dB, 100 % = -30 dB
+//  - Solo en modos de voz: en CW y digitales se queda en el NR normal
+// ═══════════════════════════════════════════════════════════════════
+Plugins.audio_dsp._rnnWasmUrl = 'static/plugins/receiver/audio_dsp/rnnoise.wasm';
+
+// ¿Está la IA trabajando ahora mismo? (pedida, cargada y en modo de voz)
+Plugins.audio_dsp._aiActivo = function () {
+  var dsp = this;
+  if (!dsp.settings.nr_on || !dsp.settings.nr_ai || !dsp.rnnReady || !dsp.filters.rnn) return false;
+  return dsp._modoVoz();
+};
+
+Plugins.audio_dsp._modoVoz = function () {
+  try {
+    var dm = $('#openwebrx-panel-receiver').demodulatorPanel().getDemodulator();
+    if (!dm) return true;
+    var sec = ''; try { sec = dm.get_secondary_demod() || ''; } catch (e) {}
+    if (sec) return false;                                   // decodificador digital
+    var m = dm.get_modulation();
+    // CW, digitales y emisoras de música (WFM, DAB, DRM) se quedan sin IA
+    return ['cw', 'wfm', 'bcfm', 'dab', 'drm', 'bpsk31', 'bpsk63', 'rtty', 'packet', 'ft8'].indexOf(m) < 0;
+  } catch (e) { return true; }
+};
+
+Plugins.audio_dsp._syncAI = function () {
+  var dsp = this, s = dsp.settings;
+  var $b = $('#adsp-nr-ai');
+  $b.toggleClass('adsp-ai-on', !!s.nr_ai);
+  $b.toggleClass('adsp-ai-off', !!dsp._rnnFallo);
+  if (dsp._rnnFallo) $b.attr('title', 'Red neuronal no disponible en este navegador');
+  $('#adsp-nr-learn').toggleClass('adsp-ai-hide', !!s.nr_ai);   // LEARN no hace falta con IA
+  $('#adsp-nr-vad').toggleClass('on', !!s.nr_ai && !!s.nr_on);
+  $('#adsp-nr-on').prop('checked', !!s.nr_on);
+};
+
+// Vigila el modo: al pasar a CW/digital (o volver a voz) recompone la cadena
+Plugins.audio_dsp._rnnModeWatch = function () {
+  var dsp = this;
+  if (dsp._rnnModeT) return;
+  dsp._rnnUltimo = null;
+  dsp._rnnModeT = setInterval(function () {
+    if (!dsp.hooked || !dsp.settings.nr_ai) { dsp._rnnUltimo = null; return; }
+    var a = dsp._aiActivo();
+    if (a !== dsp._rnnUltimo) {
+      var cambia = dsp._rnnUltimo !== null;
+      dsp._rnnUltimo = a;
+      if (cambia) { dsp._sendNRParams(); dsp._reconnect(); }
+    }
+  }, 1000);
+};
+
+Plugins.audio_dsp._rnnBuild = function (ctx) {
+  var dsp = this;
+  dsp.rnnReady = false;
+  dsp.filters.rnn = null;
+  if (!window.WebAssembly || !ctx.audioWorklet) { dsp._rnnFallo = true; dsp._syncAI(); return; }
+  // El módulo wasm se compila una sola vez y se reutiliza si cambia el AudioContext
+  if (!dsp._rnnModP) {
+    dsp._rnnModP = fetch(dsp._rnnWasmUrl).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.arrayBuffer();
+    }).then(function (b) { return WebAssembly.compile(b); });
+    dsp._rnnModP.catch(function () { dsp._rnnModP = null; });   // reintentar en el próximo contexto
+  }
+  var src = String.raw`
+class EA7RNN extends AudioWorkletProcessor {
+  constructor(opt){
+    super();
+    var o=opt.processorOptions||{};
+    var self=this, mem=null;
+    var inst=new WebAssembly.Instance(o.module,{a:{
+      a:function(){return 0;},
+      b:function(d,s,n){var u=new Uint8Array(mem.buffer);u.copyWithin(d,s,s+n);}
+    }});
+    var x=inst.exports; mem=x.c;
+    x.d();                                  // constructores
+    this.x=x; this.st=x.f(0);               // rnnoise_create(NULL)
+    this.pIn=x.g(480*4); this.pOut=x.g(480*4);
+    this.mem=mem;
+    this.sr=sampleRate;
+    // re-muestreo (Catmull-Rom): entrada sr->48k y salida 48k->sr
+    this.stA=this.sr/48000; this.tA=0; this.hA=new Float32Array(4);
+    this.stB=48000/this.sr; this.tB=0; this.hB=new Float32Array(4);
+    this.fr=new Float32Array(480); this.nf=0;
+    // sonido original retrasado 480 muestras (retardo propio de RNNoise), alineado con la IA
+    this.dry=new Float32Array(480); this.dw=0;
+    this.out=new Float32Array(16384); this.oR=0; this.oW=0; this.prim=false;
+    this.mix=(o.mix!==undefined)?o.mix:0.5; this.vadAcc=0; this.vadN=0;
+    // v2 "plantilla": la IA no se oye directamente; su salida dice, frecuencia a
+    // frecuencia, cuánto del sonido original dejar pasar. Esa plantilla se suaviza
+    // (sube rápido, baja despacio) para que no haya golpes de ruido.
+    var N=1024; this.N=N; this.H=256;
+    this.win=new Float32Array(N);
+    for(var i=0;i<N;i++) this.win[i]=Math.sqrt(0.5-0.5*Math.cos(2*Math.PI*i/N));
+    this.bD=new Float32Array(N); this.bW=new Float32Array(N); this.nh=0;
+    this.rD=new Float32Array(N); this.iD=new Float32Array(N);
+    this.rW=new Float32Array(N); this.iW=new Float32Array(N);
+    this.ola=new Float32Array(N);
+    this.M=new Float32Array(N/2+1); this.G=new Float32Array(N/2+1); this.G.fill(1);
+    this.br=new Uint16Array(N);
+    for(i=0;i<N;i++){var r=0,v=i;for(var b=0;b<10;b++){r=(r<<1)|(v&1);v>>=1;}this.br[i]=r;}
+    this.port.onmessage=function(e){var d=e.data;
+      if(d.mix!==undefined)self.mix=d.mix;
+    };
+  }
+  cr(h,t){ // Catmull-Rom entre h[1] y h[2]
+    var a=h[0],b=h[1],c=h[2],d=h[3];
+    return b+0.5*t*(c-a+t*(2*a-5*b+4*c-d+t*(3*(b-c)+d-a)));
+  }
+  fft(re,im,inv){
+    var N=this.N,br=this.br,i,j,t;
+    for(i=0;i<N;i++){j=br[i];if(j>i){t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
+    for(var len=2;len<=N;len<<=1){
+      var ang=(inv?2:-2)*Math.PI/len, wr=Math.cos(ang), wi=Math.sin(ang), h=len>>1;
+      for(i=0;i<N;i+=len){
+        var cr=1,ci=0;
+        for(j=0;j<h;j++){
+          var a=i+j,b=a+h;
+          var tr=re[b]*cr-im[b]*ci, ti=re[b]*ci+im[b]*cr;
+          re[b]=re[a]-tr; im[b]=im[a]-ti; re[a]+=tr; im[a]+=ti;
+          var nc=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=nc;
+        }
+      }
+    }
+    if(inv){for(i=0;i<N;i++){re[i]/=N;im[i]/=N;}}
+  }
+  hop(){
+    var N=this.N,H=this.H,K=N>>1,w=this.win,i,k;
+    var rD=this.rD,iD=this.iD,rW=this.rW,iW=this.iW,M=this.M,G=this.G;
+    for(i=0;i<N;i++){rD[i]=this.bD[i]*w[i];iD[i]=0;rW[i]=this.bW[i]*w[i];iW[i]=0;}
+    this.fft(rD,iD,false); this.fft(rW,iW,false);
+    for(k=0;k<=K;k++){
+      var md=Math.sqrt(rD[k]*rD[k]+iD[k]*iD[k]), mw=Math.sqrt(rW[k]*rW[k]+iW[k]*iW[k]);
+      var m=mw/(md+1e-9); M[k]=m>1?1:m;
+    }
+    // suelo: Level 0% -> -6 dB, 50% -> -18 dB, 100% -> -30 dB
+    var suelo=Math.pow(10,(-6-this.mix*24)/20);
+    for(k=0;k<=K;k++){
+      var s=0,n=0;
+      for(var q=k-2;q<=k+2;q++){ if(q>=0&&q<=K){s+=M[q];n++;} }   // suavizado en frecuencia
+      s/=n;
+      var g=G[k], a=s>g?0.3:0.9;                                 // sube rápido, baja despacio
+      g=a*g+(1-a)*s; G[k]=g;
+      var gg=g>suelo?g:suelo;
+      rD[k]*=gg; iD[k]*=gg;
+      if(k>0&&k<K){rD[N-k]*=gg; iD[N-k]*=gg;}
+    }
+    this.fft(rD,iD,true);
+    var ola=this.ola, hB=this.hB;
+    for(i=0;i<N;i++) ola[i]+=rD[i]*w[i]*0.5;                    // sqrt-Hann x2, solape 75% -> x0.5
+    for(i=0;i<H;i++){
+      hB[0]=hB[1]; hB[1]=hB[2]; hB[2]=hB[3]; hB[3]=ola[i];
+      while(this.tB<1){ this.out[this.oW&16383]=this.cr(hB,this.tB); this.oW++; this.tB+=this.stB; }
+      this.tB-=1;
+    }
+    ola.copyWithin(0,H); ola.fill(0,N-H);
+    this.bD.copyWithin(0,H); this.bW.copyWithin(0,H);
+  }
+  frame(){
+    var x=this.x, f32=new Float32Array(this.mem.buffer), i;
+    var pi=this.pIn>>2, po=this.pOut>>2, fr=this.fr;
+    for(i=0;i<480;i++) f32[pi+i]=fr[i]*32768;
+    var vad=x.j(this.st,this.pOut,this.pIn);
+    this.vadAcc+=vad; this.vadN++;
+    if(this.vadN>=20){ this.port.postMessage({vad:this.vadAcc/this.vadN}); this.vadAcc=0; this.vadN=0; }
+    f32=new Float32Array(this.mem.buffer);
+    var dry=this.dry, N=this.N, H=this.H;
+    for(i=0;i<480;i++){
+      var dw=this.dw; var dv=dry[dw]; dry[dw]=fr[i]; this.dw=(dw+1)%480;
+      var p=N-H+this.nh;
+      this.bD[p]=dv; this.bW[p]=f32[po+i]/32768;
+      if(++this.nh===H){ this.nh=0; this.hop(); }
+    }
+  }
+  process(inputs,outputs){
+    var inp=inputs[0]&&inputs[0][0];
+    var out=outputs[0], M=out[0].length, i, ch;
+    if(inp){
+      var hA=this.hA;
+      for(i=0;i<inp.length;i++){
+        hA[0]=hA[1]; hA[1]=hA[2]; hA[2]=hA[3]; hA[3]=inp[i];
+        while(this.tA<1){
+          this.fr[this.nf++]=this.cr(hA,this.tA);
+          if(this.nf===480){ this.frame(); this.nf=0; }
+          this.tA+=this.stA;
+        }
+        this.tA-=1;
+      }
+    }
+    var lvl=this.oW-this.oR;
+    if(lvl>8192){ this.oR=this.oW-1024; lvl=1024; }      // no acumular retraso
+    // colchón de una trama (~10 ms) para no cortar entre tramas
+    var need=Math.ceil(480*this.sr/48000)+M;
+    if(!this.prim && lvl>=need) this.prim=true;
+    if(this.prim && lvl<M) this.prim=false;
+    for(i=0;i<M;i++){
+      var v=0;
+      if(this.prim){ v=this.out[this.oR&16383]; this.oR++; }
+      for(ch=0;ch<out.length;ch++) out[ch][i]=v;
+    }
+    return true;
+  }
+}
+registerProcessor('ea7-rnnoise',EA7RNN);
+`;
+  var url = URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
+  Promise.all([dsp._rnnModP, ctx.audioWorklet.addModule(url)]).then(function (r) {
+    if (ctx !== dsp.ctx) return;                          // el contexto cambió mientras tanto
+    var node = new AudioWorkletNode(ctx, 'ea7-rnnoise', {
+      numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1],
+      processorOptions: { module: r[0], mix: dsp.settings.nr_strength / 100 }
+    });
+    node.port.onmessage = function (e) {
+      if (e.data.vad === undefined) return;
+      var $v = $('#adsp-nr-vad');
+      if (!$v.children().length) $v.append('<i></i>');
+      $v.children().css('width', Math.round(e.data.vad * 100) + '%');
+      dsp._rnnVad = e.data.vad;
+    };
+    node.onprocessorerror = function () {
+      console.warn('[audio_dsp] RNNoise: error en el procesador, vuelvo al NR normal.');
+      dsp._rnnFallo = true; dsp.rnnReady = false; dsp._syncAI(); dsp._sendNRParams(); dsp._reconnect();
+    };
+    dsp.filters.rnn = node;
+    dsp.rnnReady = true;
+    dsp._rnnFallo = false;
+    dsp._syncAI();
+    dsp._sendNRParams();
+    dsp._rnnModeWatch();
+    if (dsp.settings.nr_ai) dsp._reconnect();
+    console.log('[audio_dsp] RNNoise listo (SR=' + ctx.sampleRate + ').');
+  }).catch(function (e) {
+    console.warn('[audio_dsp] RNNoise no disponible:', e);
+    dsp._rnnFallo = true;
+    dsp._syncAI();
   });
 };

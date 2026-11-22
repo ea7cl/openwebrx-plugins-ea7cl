@@ -1,0 +1,43 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/owrx/modes.py	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/owrx/modes.py	2026-11-21 18:27:38.790647267 +0100
+@@ -135,16 +135,16 @@
+ 
+ class Modes(object):
+     mappings = [
+-        AnalogMode("nfm", "FM", bandpass=Bandpass(-4000, 4000)),
++        AnalogMode("nfm", "FM", bandpass=Bandpass(-5000, 5000)),
+         AnalogMode("wfm", "WFM", bandpass=Bandpass(-75000, 75000)),
+-        AnalogMode("am", "AM", bandpass=Bandpass(-4000, 4000)),
+-        AnalogMode("lsb", "LSB", bandpass=Bandpass(-2750, -150)),
+-        AnalogMode("usb", "USB", bandpass=Bandpass(150, 2750)),
++        AnalogMode("am", "AM", bandpass=Bandpass(-5000, 5000)),
++        AnalogMode("lsb", "LSB", bandpass=Bandpass(-2850, -50)),
++        AnalogMode("usb", "USB", bandpass=Bandpass(50, 2850)),
+         AnalogMode("cw", "CW", bandpass=Bandpass(700, 900)),
+         AnalogMode("sam", "SAM", bandpass=Bandpass(-4000, 4000)),
+         AnalogMode("bcfm", "BCFM", bandpass=None, ifRate=192000),
+         AnalogMode("iq", "IQ", bandpass=Bandpass(0, 48000)),
+-        AnalogMode("dmr", "DMR", bandpass=Bandpass(-6250, 6250), requirements=["digital_voice_digiham"], squelch=False),
++        AnalogMode("dmr", "DMR", bandpass=Bandpass(-6500, 6500), requirements=["digital_voice_digiham"], squelch=False),
+         AnalogMode(
+             "dstar", "D-Star", bandpass=Bandpass(-3250, 3250), requirements=["digital_voice_digiham"], squelch=False
+         ),
+@@ -389,6 +389,18 @@
+             service=True,
+             squelch=True
+         ),
++        # EA7CL meshtastic_narrow (inicio)
++        DigitalMode(
++            "meshtastic-narrow",
++            "Meshtastic Narrow",
++            underlying=["empty"],
++            bandpass=None,
++            ifRate=1000000,
++            requirements=["meshtastic"],
++            service=True,
++            squelch=True
++        ),
++        # EA7CL meshtastic_narrow (fin)
+         DigitalMode(
+             "meshcore",
+             "Meshcore",

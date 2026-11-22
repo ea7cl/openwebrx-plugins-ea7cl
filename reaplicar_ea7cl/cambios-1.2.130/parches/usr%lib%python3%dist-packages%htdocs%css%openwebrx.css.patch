@@ -1,0 +1,727 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/htdocs/css/openwebrx.css	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/htdocs/css/openwebrx.css	2026-11-07 12:21:31.457245607 +0100
+@@ -164,25 +164,29 @@
+ 
+ #openwebrx-scale-container
+ {
+-    height: 47px;
+-    overflow: hidden;
+-    z-index: 100;
+-    position: relative;
++	height: 47px;
++	overflow: hidden;
++	z-index:100; /*1000;*/
++	position: relative;
+ }
+ 
+-#openwebrx-frequency-container {
+-    background-image: url("../gfx/openwebrx-scale-background.png");
+-    background-repeat: repeat-x;
+-    background-size: auto 140px;
+-    background-color: #444;
+-    z-index: 101;
++#openwebrx-frequency-container 
++{
++        /*background-image: url("../gfx/openwebrx-scale-background.png");*/
++        background-repeat: repeat-x;
++        /*background-size: auto 125px;*/
++        background-size: cover;
++   /* background-color: #444;*/
++        background-color: #000000; /*#470000;*/ /*#000;*/
++    z-index: 101; /*1001;*/
+ }
+ 
+ #openwebrx-bookmarks-container
+ {
+     height: 25px;
+     position: relative;
+-    z-index: 100;
++    z-index: 100; /*1000;*/
++    background-color: #000000; /*#71121b;*/
+ }
+ 
+ #openwebrx-bookmarks-container .bookmark {
+@@ -220,11 +224,11 @@
+ }
+ 
+ #openwebrx-bookmarks-container .bookmark.selected {
+-    z-index: 102;
++    z-index: 102; /*1010;*/
+ }
+ 
+ #openwebrx-bookmarks-container .bookmark:hover {
+-    z-index: 103;
++    z-index: 103; /*1011;*/
+     max-height: none;
+     max-width: none;
+ }
+@@ -301,10 +305,10 @@
+ 	border-style: none;
+ 	image-rendering: crisp-edges;
+ 	image-rendering: -webkit-optimize-contrast;
+-	width: 100%;
+-	height: 201px;
+-	will-change: transform;
+-	margin-top: -1px;
++        width: 100%;
++        height: 200px;
++        will-change: transform;
++      margin-top: -1px;
+ }
+ 
+ #openwebrx-log-scroll
+@@ -439,10 +443,10 @@
+ .webrx-mouse-freq {
+ 	width: 100%;
+ 	text-align: left;
+-	font-size: 10pt;
+-	color: #AAA;
++	font-size: 13pt; /*10pt;*/
++	color: #fd0000; /*#ff6262;*/ /*#AAA;*/
+ 	font-family: 'roboto-mono';
+-	margin-bottom: 5px;
++	margin-bottom: 2px; /*5px;*/
+ }
+ 
+ .webrx-cross-freq {
+@@ -481,7 +485,23 @@
+ 
+ .openwebrx-panel
+ {
+-	transform: perspective( 600px ) rotateX( 90deg );
++        transform: perspective( 600px ) rotateX( 90deg );
++        background-color: #000;/*#575757;*/
++        padding: 10px;
++        color: #09ef3e; /*#fff;*/ /*white;*/
++        font-size: 9pt;
++        /* --- do below for transparent mode --- */
++        border-style: solid;
++        border-color: black;
++        border-width: 0px;
++        /* ------------------------------------- */
++        border-radius: 10px;/*15px;*/ /* eroyee, border-radius to 5 fm 15 */
++        -moz-border-radius: 5px;/*15px;*/
++        margin: 5.9px;
++        box-sizing: content-box;
++        transition: opacity 0.5s ease-out;
++
++	/*transform: perspective( 600px ) rotateX( 90deg );
+ 	background-color: #575757;
+ 	padding: 10px;
+ 	color: white;
+@@ -489,13 +509,12 @@
+ 	border-radius: 15px;
+ 	-moz-border-radius: 15px;
+ 	margin: 5.9px;
+-	box-sizing: content-box;
+-	transition: opacity 0.5s ease-out;
++	box-sizing: content-box;*/
+ }
+ 
+ .openwebrx-panel a
+ {
+-	color: #5ca8ff;
++	color: #ffcc00; /*#5ca8ff;*/
+ 	text-shadow: none;
+ }
+ 
+@@ -508,18 +527,18 @@
+ 
+ .openwebrx-checkbox
+ {
+-	color: #aaa;
++        color: #aaa;
+ }
+ 
+-.openwebrx-button
++.openwebrx-button  /* Esto cambia los botones de modo */
+ {
+ 	background-color: #373737;
+-	padding: 4.2px;
+-	border-radius: 5px;
++	padding: 1.2px; /*3.2px;*/
++	border-radius: 30px; /*5px;*/
+ 	-moz-border-radius: 5px;
+ 	color: White;
+ 	font-weight: bold;
+-	margin-right: 1px;
++	margin-right: 7px;
+ 	cursor: pointer;
+ 	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #373737), color-stop(1, #4F4F4F) );
+ 	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
+@@ -536,8 +555,8 @@
+ {
+ 	/*background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #3F3F3F), color-stop(1, #777777) );
+ 	background:-moz-linear-gradient( center top, #373737 5%, #4F4F4F 100% );*/
+-	background: #474747;
+-	color: #FFFF50;
++	background: #872607; /* #0093ff;*/ /*#474747;*/
++	color: #ffff50; /*#FFFF50;*/
+ }
+ 
+ .openwebrx-button:active
+@@ -547,7 +566,7 @@
+ }
+ 
+ .openwebrx-button:last-child {
+-    margin-right: 0;
++    margin-right: 0; /*0px;*/
+ }
+ 
+ .openwebrx-button.disabled {
+@@ -556,8 +575,8 @@
+ 
+ .openwebrx-demodulator-button
+ {
+-	height: 19px;
+-	font-size: 12pt;
++	height: 15px;
++	font-size: 9pt;
+ 	text-align: center;
+ 	flex: 1;
+ 	margin-right: 5px;
+@@ -575,8 +594,8 @@
+ .openwebrx-round-button
+ {
+ 	margin-right: -2px;
+-	width: 35px;
+-	height: 35px;
++	width: 35px; /*35px;*/
++	height: 35px; /*35px;*/
+ 	border-radius: 25px;
+ }
+ 
+@@ -635,7 +654,7 @@
+ {
+ 	position: relative;
+ 	border-radius: 5px;
+-	background-color: #003850; /*#006235;*/
++	background-color: #000; /*#003850;*/ /*#006235;*/
+ 	display: inline-block;
+ 	text-align: center;
+ 	font-size: 8pt;
+@@ -710,8 +729,8 @@
+ }
+ 
+ #openwebrx-panel-receiver .openwebrx-bookmark-button {
+-    width: 27px;
+-    height: 27px;
++    width: 27px; /*27px;*//* eroyee; 27 a 20, altera el tamaño del icono 'marcador' en el panel de recepción */
++    height: 27px;  /*27px;*//* eroyee; 27 to 20 */
+     text-align: center;
+ }
+ 
+@@ -745,6 +764,7 @@
+ 
+ .openwebrx-plugin-stack {
+     position: absolute;
++    /*left:  -50px;*/
+     margin-right: 5px;
+     right: 100%;
+     bottom: 10px;
+@@ -827,33 +847,33 @@
+ }
+ 
+ #openwebrx-smeter {
+-	border-color: #888;
+-	border-style: solid;
+-	border-width: 0px;
+-	width: 255px;
+-	height: 7px;
+-	background-color: #373737;
+-	border-radius: 3px;
+-	overflow: hidden;
++        border-color: #888;
++        border-style: solid;
++        border-width: 1px; /*1px;*/
++        width: 258px;
++        height: 8px; /*8px;*/
++        background-color: #373737;
++        border-radius: 0px;
++        overflow: hidden;
+ }
+ 
+ .openwebrx-smeter-bar {
+-	transition-property: transform;
+-	transition-duration: 0.2s;
+-	transition-timing-function: linear;
+-	will-change: transform;
+-	transform: translate(-100%) translateZ(0);
+-	width: 100%;
+-	height: 100%;
+-	background: linear-gradient(to top, #ff5939 , #961700);
+-	margin: 0;
+-	padding: 0;
+-	border-radius: 3px;
++        transition-property: transform;
++        transition-duration: 0.2s;
++        transition-timing-function: linear;
++        will-change: transform;
++        transform: translate(-100%) translateZ(0);
++        width: 100%;
++        height: 100%;
++        background: linear-gradient(to top, #ff5939 , #961700);
++        margin: 0;
++        padding: 0;
++        border-radius: 1px;
+ }
+ 
+ #openwebrx-clock-utc
+ {
+-	color: #aaa;
++	color: #ffffff; /*#aaa;*/
+ 	display: inline-block;
+ 	font-size: 10pt;
+ 	float: left;
+@@ -863,7 +883,7 @@
+ 
+ #openwebrx-smeter-db
+ {
+-	color: #aaa;
++	color: yellow; /*#aaa;*/
+ 	display: inline-block;
+ 	font-size: 10pt;
+ 	float: right;
+@@ -881,7 +901,7 @@
+     background-color: #777;
+     left: 0;
+     top: 0;
+-    z-index: 120;
++    z-index: 120; /*1001;*/
+     color: white;
+     font-weight: bold;
+     font-size: 20pt;
+@@ -937,9 +957,9 @@
+ .openwebrx-dialog input {
+ 	border-radius: 5px;
+ 	background-color: #373737;
+-	color: White;
++	color: Orange; /*White;*/
+ 	font-weight: normal;
+-	font-size: 13pt;
++	font-size: 10pt;
+ 	margin-right: 1px;
+ 	background:linear-gradient(#373737, #4F4F4F);
+ 	border-color: transparent;
+@@ -972,9 +992,9 @@
+ 
+ .openwebrx-secondary-demod-listbox {
+ 	width: 173px;
+-	height: 27px;
++	height: 19px;
+ 	padding-left:3px;
+-	flex: 4;
++	flex: 2;
+ }
+ 
+ #openwebrx-sdr-profiles-listbox {
+@@ -1229,7 +1249,7 @@
+     flex: 0.7 0 0;
+     line-height: 1.2em;
+     font-size: 12px;
+-}
++} 
+ 
+ .openwebrx-p25-display {
+     flex: 0.7 0 0;
+@@ -1292,8 +1312,8 @@
+ }
+ 
+ #openwebrx-panel-js8-message .message {
+-    width: 445px;
+-    max-width: 445px;
++    width: 445px; /*465px;*/
++    max-width: 445px; /*465px;*/
+ }
+ 
+ #openwebrx-panel-js8-message td.message {
+@@ -1449,7 +1469,7 @@
+ }
+ 
+ #openwebrx-panel-adsb-message .distance {
+-    width: 80px;
++    width: 57px; /*80px;*/
+     text-align: right;
+ }
+ 
+@@ -1921,9 +1941,9 @@
+ }
+ 
+ #openwebrx-panel-metadata-wfm {
+-	width: 350px;
+-	max-height: 300px;
+-	padding: 10px 10px 10px 10px;
++        width: 350px;
++        max-height: 300px;
++        padding: 10px 10px 10px 10px;
+ }
+ 
+ #openwebrx-panel-metadata-bcfm {
+@@ -1933,14 +1953,14 @@
+ }
+ 
+ .rds-container {
+-	width: 100%;
+-	text-align: center;
+-	overflow: hidden auto;
++        width: 100%;
++        text-align: center;
++        overflow: hidden auto;
+ }
+ 
+ .rds-container .rds-stationname {
+-	font-weight: bold;
+-	font-size: 18pt;
++        font-weight: bold;
++        font-size: 18pt;
+ }
+ 
+ .rds-container .rds-top-line,
+@@ -1948,229 +1968,229 @@
+ .rds-container .rds-stationname,
+ .rds-container .rds-radiotext,
+ .rds-container .rds-radiotext-plus {
+-	min-height: 1lh;
++        min-height: 1lh;
+ }
+ 
+ .rds-container .rds-top-line {
+-	padding: 0 0 5px 0;
++        padding: 0 0 5px 0;
+ }
+ 
+ .rds-container .rds-bottom-line {
+-	padding: 5px 0 0 0;
++        padding: 5px 0 0 0;
+ }
+ 
+ .rds-container .rds-stationname,
+ .rds-container .rds-radiotext,
+ .rds-container .rds-radiotext-plus {
+-	padding: 5px 0 5px 0;
++        padding: 5px 0 5px 0;
+ }
+ 
+ .rds-container .rds-callsign {
+-	float: left;
++        float: left;
+ }
+ 
+ .rds-container .rds-identifier {
+-	float: right;
++        float: right;
+ }
+ 
+ .rds-container .rds-prog_type {
+-	float: left;
++        float: left;
+ }
+ 
+ .rds-container .rds-clock {
+-	float: right;
++        float: right;
+ }
+ 
+ .rds-container .rds-radiotext-plus .rds-rtplus-item:not(:empty):before {
+-	content: "\266B  ";
++        content: "\266B  ";
+ }
+ 
+ .rds-container .rds-radiotext-plus .rds-rtplus-programme:not(:empty):before {
+-	content: "\1F4C5  ";
++        content: "\1F4C5  ";
+ }
+ 
+ .rds-container .rds-radiotext-plus ul.rds-rtplus-news {
+-	list-style-type: "\1F4F0  ";
+-	padding-left: 1.5lh;
++        list-style-type: "\1F4F0  ";
++        padding-left: 1.5lh;
+ }
+ 
+ .rds-container .rds-radiotext-plus .rds-rtplus-weather:not(:empty):before {
+-	content: "\26C5  ";
++        content: "\26C5  ";
+ }
+ 
+ .rds-container .rds-radiotext-plus .rds-rtplus-homepage:not(:empty):before {
+-	content: "\1F517  ";
++        content: "\1F517  ";
+ }
+ 
+ #openwebrx-panel-metadata-hdr {
+-	width: 350px;
+-	max-height: 400px;
+-	padding: 10px 10px 10px 10px;
++        width: 350px;
++        max-height: 400px;
++        padding: 10px 10px 10px 10px;
+ }
+ 
+ .hdr-container {
+-	width: 100%;
+-	text-align: center;
+-	overflow: hidden auto;
++        width: 100%;
++        text-align: center;
++        overflow: hidden auto;
+ }
+ 
+ .hdr-image {
+-	display: block;
+-	margin: auto;
+-	max-height: 200px;
++        display: block;
++        margin: auto;
++        max-height: 200px;
+ }
+ 
+ .hdr-container .hdr-station {
+-	font-weight: bold;
+-	font-size: 18pt;
++        font-weight: bold;
++        font-size: 18pt;
+ }
+ 
+ .hdr-container .hdr-top-line,
+ .hdr-container .hdr-bottom-line,
+ .hdr-container .hdr-station,
+ .hdr-container .hdr-message {
+-	min-height: 1lh;
++        min-height: 1lh;
+ }
+ 
+ .hdr-container .hdr-top-line {
+-	padding: 0 0 5px 0;
++        padding: 0 0 5px 0;
+ }
+ 
+ .hdr-container .hdr-bottom-line {
+-	padding: 5px 0 0 0;
++        padding: 5px 0 0 0;
+ }
+ 
+ .hdr-container .hdr-station,
+ .hdr-container .hdr-message {
+-	padding: 5px 0 5px 0;
++        padding: 5px 0 5px 0;
+ }
+ 
+ .hdr-container .hdr-selector,
+ .hdr-container .hdr-genre {
+-	float: left;
++        float: left;
+ }
+ 
+ .hdr-container .hdr-identifier {
+-	float: right;
++        float: right;
+ }
+ 
+ #openwebrx-panel-metadata-dab {
+-	width: 350px;
++        width: 350px;
+ }
+ 
+ #openwebrx-panel-metadata-dab .dab-container {
+-	width: 100%;
++        width: 100%;
+ }
+ 
+ .dab-container > * {
+-	margin: 2px 0;
+-	text-align: center;
+-	overflow: hidden auto;
++        margin: 2px 0;
++        text-align: center;
++        overflow: hidden auto;
+ }
+ 
+ .dab-container label {
+-	display: block;
+-	margin: 5px 0;
++        display: block;
++        margin: 5px 0;
+ }
+ 
+ .dab-container select#dab-service-id {
+-	width: 100%;
+-	padding: 3px;
++        width: 100%;
++        padding: 3px;
+ }
+ 
+ .dab-container .dab-ensemble-id:not(:empty):before {
+-	content: "Ensemble ID: ";
++        content: "Ensemble ID: ";
+ }
+ 
+ .dab-container .dab-ensemble-label:not(:empty):before {
+-	content: "Ensemble: ";
++        content: "Ensemble: ";
+ }
+ 
+ #openwebrx-panel-metadata-drm {
+-	width: 350px;
+-	max-height: 640px;
+-	padding: 10px 10px 10px 10px;
++        width: 350px;
++        max-height: 640px;
++        padding: 10px 10px 10px 10px;
+ }
+ 
+ .drm-container {
+-	width: 100%;
++        width: 100%;
+ }
+ 
+ .drm-line, .drm-separator {
+-	width: 100%;
+-	padding-bottom: 5px;
+-	padding-top: 5px;
+-	text-align: center;
+-	color: #ccc;
++        width: 100%;
++        padding-bottom: 5px;
++        padding-top: 5px;
++        text-align: center;
++        color: #ccc;
+ }
+ 
+ .drm-separator {
+-	border-top: 2px dotted;
++        border-top: 2px dotted;
+ }
+ 
+ .drm-program {
+-	width: 95%;
+-	padding: 5px 5px 5px 5px;
+-	border-radius: 3px;
++        width: 95%;
++        padding: 5px 5px 5px 5px;
++        border-radius: 3px;
+         background: #111;
+-	text-align: left;
++        text-align: left;
+ }
+ 
+ .drm-label, .drm-left {
+-	display: inline-block;
+-	font-size: 11px;
+-	letter-spacing: 0.3px;
+-	color: #ccc;
++        display: inline-block;
++        font-size: 11px;
++        letter-spacing: 0.3px;
++        color: #ccc;
+ }
+ 
+ .drm-left {
+-	padding-right: 10px;
+-	text-align: right;
+-	width: 20%;
++        padding-right: 10px;
++        text-align: right;
++        width: 20%;
+ }
+ 
+ .drm-value, .drm-right {
+-	display: inline-block;
+-	font-size: 11px;
+-	font-weight: 600;
+-	letter-spacing: 0.3px;
+-	color: #fff;
++        display: inline-block;
++        font-size: 11px;
++        font-weight: 600;
++        letter-spacing: 0.3px;
++        color: #fff;
+ }
+ 
+ .drm-right {
+-	padding-left: 10px;
+-	text-align: left;
+-	width: 20%;
++        padding-left: 10px;
++        text-align: left;
++        width: 20%;
+ }
+ 
+ .drm-indicator {
+-	padding: 2px 6px;
+-	margin-left: 3px;
+-	margin-right: 3px;
+-	border-radius: 3px;
+-	font-size: 11px;
+-	font-weight: 600;
+-	display: inline-flex;
+-	align-items: center;
+-	justify-content: center;
+-	min-width: 10px;
+-	transition: background-color 0.2s ease, color 0.2s ease;
+-	letter-spacing: 0.3px;
++        padding: 2px 6px;
++        margin-left: 3px;
++        margin-right: 3px;
++        border-radius: 3px;
++        font-size: 11px;
++        font-weight: 600;
++        display: inline-flex;
++        align-items: center;
++        justify-content: center;
++        min-width: 10px;
++        transition: background-color 0.2s ease, color 0.2s ease;
++        letter-spacing: 0.3px;
+ }
+ 
+ .drm-on {
+-	background: #0f0;
+-	color: #000;
++        background: #0f0;
++        color: #000;
+ }
+ 
+ .drm-off {
+-	background: #666;
+-	color: #ccc;
++        background: #666;
++        color: #ccc;
+ }
+ 
+ .drm-error {
+-	background: #f00;
+-	color: #fff;
++        background: #f00;
++        color: #fff;
+ }
+ 
+ @keyframes openwebrx-record-animation {
+@@ -2234,8 +2254,9 @@
+ 
+ .openwebrx-spectrum-container.expanded {
+     opacity: 1;
+-    height: 50px;
+-    border-bottom: 1px solid white;
++    height: 30px;
++    border-bottom: 1px solid red; /*white;*/
++    background-color: black;
+ }
+ 
+ .openwebrx-bandplan-container {
+@@ -2251,6 +2272,7 @@
+ .openwebrx-bandplan-container.expanded {
+     opacity: 1;
+     height: 16px;
++    background-color: #000000; /*#56606a;*/
+ }
+ 
+ .openwebrx-section-divider {
+@@ -2261,7 +2283,7 @@
+     width: 100%;
+     text-align: left;
+     font-size: 10pt;
+-    color: #AAA;
++    color: #f7af04; /*#AAA;*/
+     user-select: none;
+     -webkit-touch-callout: none;
+     -webkit-user-select: none;

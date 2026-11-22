@@ -1,0 +1,81 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/htdocs/openwebrx.js	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/htdocs/openwebrx.js	2026-11-07 13:17:12.640525106 +0100
+@@ -508,6 +508,7 @@
+ }
+ 
+ function resize_scale() {
++    if (!scale_canvas) return; // EA7CL: aun no hay cascada (llega con la configuracion del servidor)
+     var ratio = window.devicePixelRatio || 1;
+     var w = window.innerWidth;
+     var h = 47;
+@@ -878,9 +879,9 @@
+             );
+             var versionInfo = 'Unknown server';
+             if (params.server && params.server === 'openwebrx' && params.version) {
+-                versionInfo = 'OpenWebRX+ version: ' + params.version;
++                versionInfo = 'OpenWebRX+ personalizado: ' + params.version;
+             }
+-            divlog('Server acknowledged WebSocket connection, ' + versionInfo);
++            divlog('El servidor reconoció la conexión WebSocket, ' + versionInfo);
+         } else {
+             try {
+                 var json = JSON.parse(evt.data);
+@@ -926,11 +927,11 @@
+                         if ('audio_compression' in config) {
+                             var audio_compression = config['audio_compression'];
+                             audioEngine.setCompression(audio_compression);
+-                            divlog("Audio stream is " + ((audio_compression === "adpcm") ? "compressed" : "uncompressed") + ".");
++                            divlog("La transmisión de audio está " + ((audio_compression === "adpcm") ? "comprimida" : "sin comprimir") + ".");
+                         }
+                         if ('fft_compression' in config) {
+                             fft_compression = config['fft_compression'];
+-                            divlog("FFT stream is " + ((fft_compression === "adpcm") ? "compressed" : "uncompressed") + ".");
++                            divlog("Secuencia FFT está " + ((fft_compression === "adpcm") ? "comprimida" : "sin comprimir") + ".");
+                         }
+                         if ('max_clients' in config)
+                             $('#openwebrx-bar-clients').progressbar().setMaxClients(config['max_clients']);
+@@ -1120,7 +1121,7 @@
+                         Chat.recvMessage(json['name'], json['text'], json['color']);
+                         break;
+                     case 'backoff':
+-                        divlog("Server is currently busy: " + json['reason'], true);
++                        divlog("El servidor está actualmente ocupado: " + json['reason'], true);
+                         var $overlay = $('#openwebrx-error-overlay');
+                         $overlay.find('.errormessage').text(json['reason']);
+                         $overlay.show();
+@@ -1204,7 +1205,7 @@
+ function on_ws_opened() {
+     $('#openwebrx-error-overlay').hide();
+     ws.send("SERVER DE CLIENT client=openwebrx.js type=receiver");
+-    divlog("WebSocket opened to " + ws.url);
++    divlog("WebSocket abierto a " + ws.url);
+     if (!networkSpeedMeasurement) {
+         networkSpeedMeasurement = new Measurement();
+         networkSpeedMeasurement.report(60000, 1000, function(rate){
+@@ -1245,7 +1246,7 @@
+ var audio_buffer_maximal_length_sec = 1; //actual number of samples are calculated from sample rate
+ 
+ function onAudioStart(apiType){
+-    divlog('Web Audio API successfully initialized, using ' + apiType  + ' API, sample rate: ' + audioEngine.getSampleRate() + " Hz");
++    divlog('Web Audio API inicializada exitosamente, usando ' + apiType  + ' API, frecuencia de muestreo: ' + audioEngine.getSampleRate() + " Hz");
+ 
+     hideOverlay();
+ 
+@@ -1274,7 +1275,7 @@
+         // initial value: 1s
+         reconnect_timeout = 1000;
+     }
+-    divlog("WebSocket has closed unexpectedly. Attempting to reconnect in " + reconnect_timeout / 1000 + " seconds...", 1);
++    divlog("WebSocket se cerró inesperadamente. Intentando reconectarse en " + reconnect_timeout / 1000 + " segundos...", 1);
+ 
+     setTimeout(open_websocket, reconnect_timeout);
+ }
+@@ -1301,7 +1302,7 @@
+     var ws_url = href + "ws/";
+ 
+     if (!("WebSocket" in window))
+-        divlog("Your browser does not support WebSocket, which is required for WebRX to run. Please upgrade to a HTML5 compatible browser.");
++        divlog("Su navegador no es compatible con WebSocket, que es necesario para que WebRX se ejecute. Actualice a un navegador compatible con HTML5.");
+     ws = new WebSocket(ws_url);
+     ws.onopen = on_ws_opened;
+     ws.onmessage = on_ws_recv;

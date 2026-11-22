@@ -1,0 +1,20 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/owrx/aprs/direwolf.py	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/owrx/aprs/direwolf.py	2026-10-27 18:27:26.555803649 +0100
+@@ -1,7 +1,7 @@
+ from csdr.module import AutoStartModule
+ from pycsdr.types import Format
+ from pycsdr.modules import Writer, TcpSource
+-from subprocess import Popen, PIPE
++from subprocess import Popen, PIPE, DEVNULL
+ from owrx.config.core import CoreConfig
+ from owrx.config import Config
+ from abc import ABC, abstractmethod
+@@ -186,7 +186,7 @@
+             cmdLine += ["-B", "AIS", "-A"]
+ 
+         # launch Direwolf
+-        self.process = Popen(cmdLine, start_new_session=True, stdin=PIPE)
++        self.process = Popen(cmdLine, start_new_session=True, stdin=PIPE, stdout=DEVNULL)
+ 
+         # resume in case the reader has been stop()ed before
+         self.reader.resume()

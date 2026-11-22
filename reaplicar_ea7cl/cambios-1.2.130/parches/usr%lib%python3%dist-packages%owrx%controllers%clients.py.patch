@@ -1,0 +1,10 @@
+--- /tmp/tmp.slTEp0RNpn/usr/lib/python3/dist-packages/owrx/controllers/clients.py	2026-11-07 04:17:10.000000000 +0100
++++ /usr/lib/python3/dist-packages/owrx/controllers/clients.py	2026-10-27 18:27:26.561803712 +0100
+@@ -49,6 +49,7 @@
+                                 <option value="360">6 hours</option>
+                                 <option value="720">12 hours</option>
+                                 <option value="1440">1 day</option>
++                                <option value="43200">30 days</option>
+                                 <option value="1000000000">forever</option>
+                             </select>
+                         </td>

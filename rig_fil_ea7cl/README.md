@@ -1,20 +1,27 @@
-# rig_fil_ea7cl — FIL y TS con desplegable (EA7CL)
+# rig_fil_ea7cl — FIL con anchos fijos y corte bajo (EA7CL)
 
-Plugin de receptor para OpenWebRX+, versión **0.1**. Instalado en el servidor `openwebrx` el 16-nov-2026,
+Plugin de receptor para OpenWebRX+, versión **0.4**. Instalado en el servidor `openwebrx` el 22-nov-2026,
 idéntico al de este repositorio (comprobado con SHA-256). Necesita `rig_skin`.
 
 ## Qué hace
 
 - El letrero **FIL** del panel rig (debajo de la frecuencia) es un botón con desplegable: N / M / W,
-  Ensanchar, Estrechar, Desplazar ← / →, **Restaurar de fábrica (este modo)** y **Restaurar todos los modos**
+  **anchos fijos** del modo (como la tecla FIL/WIDTH de un transceptor), Ensanchar, Estrechar,
+  Desplazar ← / →, **Restaurar de fábrica (este modo)** y **Restaurar todos los modos**
   (lo mismo que la tecla `|`, que en teclado español es Ctrl+Alt+1 o AltGr+1).
-- El letrero **TS** también: la lista de pasos de sintonía de OpenWebRX.
-- Un **segundo clic** en el letrero (o un clic fuera) cierra el desplegable.
+  - USB/LSB: 1,8 · 2,1 · 2,4 · 2,7 · 3 · 3,3 · 3,6 · 4 kHz (se queda quieto el corte bajo).
+  - CW: 100 a 1200 Hz (centrado en el tono). AM/SAM: 3 a 12 kHz. NFM: 6 a 20 kHz.
+  - El ancho elegido se guarda para cada modo, igual que al arrastrar el filtro.
+- El letrero **BAJO** (en el sitio que tenía TS) cambia el **corte bajo** del filtro en LSB/USB:
+  50…1000 Hz en pasos de 50, subir/bajar 50 Hz y «Estándar SSB (300 Hz)». El ancho se conserva.
+  En AM, FM y CW pone «BAJO --» y explica por qué.
+- El letrero **TS** ya no sale: el panel ya tiene la tecla TS.
+- Un **segundo clic** en el letrero (o un clic fuera) cierra el desplegable. Si por debajo no cabe, se abre hacia arriba.
 - En modos sin filtro ajustable (DAB, BCFM…) pone «FIL --» y avisa de que el ancho es fijo.
-- FIL y TS más juntos y la cifra roja (frecuencia del ratón) más pequeña, para que todo quepa en una línea.
-- Es el mismo desplegable que el MAIN del doble receptor; si el doble receptor está cargado, este no hace nada.
+- Banda aérea (118-137 MHz) en AM: ancho normal ±4 kHz.
+- Funciona igual en la pantalla normal y en el MAIN y el SUB del doble receptor.
 
-![Desplegable FIL](capturas/fil-desplegable.png)
+![Desplegable FIL con anchos fijos](capturas/fil-anchos-fijos.jpg)
 
 ## Archivos
 

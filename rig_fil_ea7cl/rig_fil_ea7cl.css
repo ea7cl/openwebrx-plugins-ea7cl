@@ -1,4 +1,4 @@
-/* rig_fil_ea7cl 0.1 · el letrero FIL y TS del panel rig como botones con desplegable */
+/* rig_fil_ea7cl 0.4 · el letrero FIL, BAJO y TS del panel rig como botones con desplegable */
 body.rigfil-on #openwebrx-panel-receiver .owrx-rig-info-filter,
 body.rigfil-on #openwebrx-panel-receiver .owrx-rig-info-step { cursor: pointer; white-space: nowrap; }
 body.rigfil-on #openwebrx-panel-receiver .owrx-rig-info-filter::after,
@@ -25,3 +25,19 @@ body.rigfil-on #openwebrx-panel-receiver #owrx-rig-info > .webrx-mouse-freq {
     font-size: 14.5px; letter-spacing: 0.3px; white-space: nowrap;
     width: auto; flex: 0 0 auto; margin-left: auto; margin-right: auto;   /* centrada en el hueco libre */
 }
+
+/* 0.4: anchos fijos y cortes bajos como fila de botones pequeños, y letrero BAJO en el sitio de TS */
+.rigfil-pop .rigfil-pop-sub {
+    padding: 5px 12px 2px 12px;
+    font: 8pt roboto-mono, monospace;
+    color: #8fa3b5;
+}
+.rigfil-pop .rigfil-chips {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px;
+    padding: 3px 10px 6px 10px; max-width: 230px;
+}
+.rigfil-pop .rigfil-chips .owrx-rig-rit-menu-item.rigfil-chip {
+    padding: 4px 2px; text-align: center; font-size: 9pt;
+    border: 1px solid #2c3a47; border-radius: 3px;
+}
+body.rigfil-on #openwebrx-panel-receiver #owrx-rig-info > .owrx-rig-info-step.rigfil-oculto { display: none; }

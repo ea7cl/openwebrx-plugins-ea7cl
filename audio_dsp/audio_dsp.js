@@ -411,7 +411,7 @@ Plugins.audio_dsp._buildGraph = function () {
     if (!dsp.hooked || !dsp.ctx) return;
     var rect = this.getBoundingClientRect();
     var frac = (e.clientX - rect.left) / rect.width;
-    var freq = Math.round(frac * (dsp.ctx.sampleRate / 2));
+    var freq = Math.round(frac * dsp.VISTA_HZ);
     freq = Math.max(100, Math.min(5000, freq));
     if (e.shiftKey) {
       dsp.settings.peak_freq = freq;
@@ -937,6 +937,10 @@ Plugins.audio_dsp._startIconAnim = function () {
 };
 
 // ─── Spectrum drawing (main window) ───
+// EA7CL 22-11: ancho del analizador (Hz). Una sola escala, 0 a VISTA_HZ,
+// para espectro, marcas, rayas de filtros, cursor y clic.
+Plugins.audio_dsp.VISTA_HZ = 6000;
+
 Plugins.audio_dsp._startSpectrum = function () {
   var dsp = this;
   if (!dsp.analyser) { console.warn('[audio_dsp] No analyser.'); return; }
@@ -963,7 +967,7 @@ Plugins.audio_dsp._startSpectrum = function () {
   dsp._wfCanvas = document.createElement('canvas');
   dsp._wfCtx = dsp._wfCanvas.getContext('2d');
 
-  var MAXHZ = 6000;
+  var MAXHZ = dsp.VISTA_HZ;
 
   function draw() {
     dsp.animFrame = requestAnimationFrame(draw);
@@ -989,7 +993,7 @@ Plugins.audio_dsp._startSpectrum = function () {
     cCtx.font = '9px monospace';
     cCtx.textAlign = 'center';
     for (var fi = 0; fi < freqs.length; fi++) {
-      var xf = (freqs[fi] / (sr / 2)) * w;
+      var xf = (freqs[fi] / MAXHZ) * w;
       if (xf > w) break;
       cCtx.beginPath(); cCtx.moveTo(xf, 0); cCtx.lineTo(xf, specH); cCtx.stroke();
       cCtx.fillText(freqs[fi] >= 1000 ? (freqs[fi]/1000)+'k' : freqs[fi], xf, specH - 2);
@@ -1303,7 +1307,7 @@ Plugins.audio_dsp._updateStageLEDs = function () {
 Plugins.audio_dsp._drawFilterMarkers = function (cCtx, w, h, sr) {
   var dsp = this;
   if (!dsp.enabled) return;
-  var maxFreq = sr / 2;
+  var maxFreq = dsp.VISTA_HZ;
   var markers = [];
   if (dsp.settings.hp_on)    markers.push({ freq: dsp.settings.hp_freq, color: '#ff6b6b', label: 'HP' });
   if (dsp.settings.lp_on)    markers.push({ freq: dsp.settings.lp_freq, color: '#ffd93d', label: 'LP' });
@@ -1676,7 +1680,7 @@ Plugins.audio_dsp._buildUI = function () {
     if (!dsp.hooked || !dsp.ctx) return;
     var rect = this.getBoundingClientRect();
     var frac = (e.clientX - rect.left) / rect.width;
-    var freq = Math.round(frac * (dsp.ctx.sampleRate / 2));
+    var freq = Math.round(frac * dsp.VISTA_HZ);
     freq = Math.max(100, Math.min(5000, freq));
     if (e.shiftKey) {
       dsp.settings.peak_freq = freq;

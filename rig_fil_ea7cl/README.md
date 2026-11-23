@@ -1,6 +1,6 @@
-# rig_fil_ea7cl — FIL con anchos fijos y corte bajo (EA7CL)
+# rig_fil_ea7cl — FIL con anchos fijos e IF SHIFT (EA7CL)
 
-Plugin de receptor para OpenWebRX+, versión **0.4**. Instalado en el servidor `openwebrx` el 22-nov-2026,
+Plugin de receptor para OpenWebRX+, versión **0.5**. Instalado en el servidor `openwebrx` el 23-nov-2026,
 idéntico al de este repositorio (comprobado con SHA-256). Necesita `rig_skin`.
 
 ## Qué hace
@@ -12,9 +12,12 @@ idéntico al de este repositorio (comprobado con SHA-256). Necesita `rig_skin`.
   - USB/LSB: 1,8 · 2,1 · 2,4 · 2,7 · 3 · 3,3 · 3,6 · 4 kHz (se queda quieto el corte bajo).
   - CW: 100 a 1200 Hz (centrado en el tono). AM/SAM: 3 a 12 kHz. NFM: 6 a 20 kHz.
   - El ancho elegido se guarda para cada modo, igual que al arrastrar el filtro.
-- El letrero **BAJO** (en el sitio que tenía TS) cambia el **corte bajo** del filtro en LSB/USB:
-  50…1000 Hz en pasos de 50, subir/bajar 50 Hz y «Estándar SSB (300 Hz)». El ancho se conserva.
-  En AM, FM y CW pone «BAJO --» y explica por qué.
+- El letrero **SHIFT** (en el sitio que tenía TS) es un **IF SHIFT** como el de un transceptor: mueve el filtro
+  entero a un lado y a otro **sin cambiar el ancho**, para dejar fuera una interferencia pegada a un borde.
+  **0 = posición de fábrica** del filtro del modo. Botones −1000 … +1000 Hz, ±50 Hz y «0 (centro)».
+  - USB/LSB: **+ = más agudo**, **− = más grave** (puede pasar un poco al otro lado de la portadora, como en un equipo real).
+  - AM, SAM y NFM: + = hacia arriba en frecuencia. En CW no (el filtro va centrado en el tono: se ajusta con FIL).
+  - Los anchos fijos de FIL conservan el SHIFT puesto, y el SHIFT se recuerda por modo.
 - El letrero **TS** ya no sale: el panel ya tiene la tecla TS.
 - Un **segundo clic** en el letrero (o un clic fuera) cierra el desplegable. Si por debajo no cabe, se abre hacia arriba.
 - En modos sin filtro ajustable (DAB, BCFM…) pone «FIL --» y avisa de que el ancho es fijo.
@@ -22,6 +25,8 @@ idéntico al de este repositorio (comprobado con SHA-256). Necesita `rig_skin`.
 - Funciona igual en la pantalla normal y en el MAIN y el SUB del doble receptor.
 
 ![Desplegable FIL con anchos fijos](capturas/fil-anchos-fijos.jpg)
+
+![Desplegable del IF SHIFT](capturas/if-shift.jpg)
 
 ## Archivos
 

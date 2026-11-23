@@ -21,3 +21,10 @@
 - Al cargar la página ya no se pisa el filtro que OpenWebRX recuerda para el modo.
 - El desplegable se abre hacia arriba si por debajo no cabe (panel abajo en el doble receptor).
 - Instalado en el servidor `openwebrx` el 22-nov-2026, idéntico al de este repositorio (SHA-256).
+
+## v0.5 — 23-nov-2026
+- El letrero **BAJO** pasa a ser **SHIFT** (IF SHIFT, como en un transceptor, a petición de un oyente):
+  mueve el filtro entero a un lado y a otro sin cambiar el ancho; 0 = posición de fábrica del modo.
+  Botones −1000 … +1000 Hz y ±50 Hz. En USB/LSB, + = más agudo; también en AM, SAM y NFM; en CW no.
+- Los anchos fijos de FIL conservan el SHIFT puesto.
+- Instalado en el servidor `openwebrx` el 23-nov-2026, idéntico al de este repositorio (SHA-256).

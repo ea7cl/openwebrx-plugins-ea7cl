@@ -9,10 +9,12 @@
  * 0.3: banda aérea (118-137 MHz) en AM: ancho normal ±4 kHz.
  * 0.4: anchos fijos por modo en FIL; letrero «BAJO» (corte bajo del filtro en LSB/USB y modos de una banda)
  *      en lugar de «TS» (el letrero TS se quita siempre). Al cambiar BAJO se mantiene el ancho.
+ * 0.5: «BAJO» pasa a ser «SHIFT» (IF SHIFT como en un transceptor): mueve el filtro entero a un lado
+ *      y a otro (+ y −) sin cambiar el ancho; 0 = posición de fábrica. También en AM y NFM.
  */
 (function () {
     'use strict';
-    var VERSION = '0.4';
+    var VERSION = '0.5';
     var CLAVE = 'rig_fil_ea7cl';
     if (window.Plugins) { Plugins.rig_fil_ea7cl = Plugins.rig_fil_ea7cl || {}; Plugins.rig_fil_ea7cl._version = VERSION; }
 
@@ -81,33 +83,50 @@
         am: AM, sam: AM,
         nfm: [6000, 8000, 10000, 12000, 16000, 20000]
     };
-    // nuevo filtro de ancho w: en LSB/USB se queda quieto el borde de la portadora (el corte bajo),
-    // en CW y en los modos simétricos se queda quieto el centro
-    function r50(v) { return Math.max(50, v); }
+    // tipo de filtro según el modo (no según dónde esté ahora: con SHIFT puede cruzar la portadora):
+    // 'usb' (por encima de la portadora), 'lsb' (por debajo), 'sim' (AM, NFM…) o null (CW, sin filtro)
+    function lado(m) {
+        if (m === 'cw') return null;
+        var fab = bandpass(m, 1);
+        if (!fab) return null;
+        if (fab.low_cut >= 0) return 'usb';
+        if (fab.high_cut <= 0) return 'lsb';
+        return 'sim';
+    }
+    // nuevo filtro de ancho w: en LSB/USB se queda quieto el borde de la portadora,
+    // en CW y en los modos simétricos se queda quieto el centro (el SHIFT no cambia)
     function conAncho(d, m, w) {
-        var lo = d.low_cut, hi = d.high_cut;
-        if (m !== 'cw' && lo >= 0) return { lo: lo, hi: lo + w };
-        if (m !== 'cw' && hi <= 0) return { lo: hi - w, hi: hi };
+        var lo = d.low_cut, hi = d.high_cut, l = lado(m);
+        if (l === 'usb') return { lo: lo, hi: lo + w };
+        if (l === 'lsb') return { lo: hi - w, hi: hi };
         var c = (lo + hi) / 2;
         return { lo: c - w / 2, hi: c + w / 2 };
     }
 
-    // ---- corte bajo (borde del filtro más cercano a la portadora), solo en modos de una banda ----
-    // pasos de 50 Hz; 300 Hz es el estándar de SSB (canal de voz 300-2700 Hz con 2,4 kHz)
-    var BAJOS = [50, 100, 150, 200, 250, 300, 350, 400, 500, 600, 800, 1000];
-    var BAJO_STD = 300;
-    function lado(d, m) {        // 'usb' (filtro por encima de la portadora), 'lsb' (por debajo) o null
-        if (!d || m === 'cw' || typeof d.low_cut !== 'number' || typeof d.high_cut !== 'number') return null;
-        if (d.low_cut >= 0) return 'usb';
-        if (d.high_cut <= 0) return 'lsb';
-        return null;
+    // ---- IF SHIFT: desplaza el filtro entero sin cambiar el ancho, como en un transceptor ----
+    // 0 = posición de fábrica del filtro del modo. En LSB/USB, + = más agudo y − = más grave
+    // (puede pasar al otro lado de la portadora); en AM/NFM, + = hacia arriba en frecuencia.
+    var SHIFTS = [-1000, -750, -500, -250, -100, -50, 50, 100, 250, 500, 750, 1000];
+    function shift(d, m) {
+        var l = lado(m), fab = bandpass(m, 1);
+        if (!l || !fab || !d) return null;
+        if (l === 'usb') return Math.round(d.low_cut - fab.low_cut);
+        if (l === 'lsb') return Math.round(fab.high_cut - d.high_cut);
+        return Math.round((d.low_cut + d.high_cut) / 2 - (fab.low_cut + fab.high_cut) / 2);
     }
-    function bajo(d, l) { return l === 'usb' ? Math.round(d.low_cut) : Math.round(-d.high_cut); }
-    // al cambiar el corte bajo se mueve el filtro entero y se queda el mismo ancho
-    // (así sigue coincidiendo con el botón de ancho fijo que se eligió)
-    function conBajo(d, l, v) {
-        var w = d.high_cut - d.low_cut;
-        return l === 'usb' ? { lo: v, hi: v + w } : { lo: -v - w, hi: -v };
+    function conShift(d, m, s) {
+        var l = lado(m), fab = bandpass(m, 1), w = d.high_cut - d.low_cut;
+        if (l === 'usb') { var lo = fab.low_cut + s; return { lo: lo, hi: lo + w }; }
+        if (l === 'lsb') { var hi = fab.high_cut - s; return { lo: hi - w, hi: hi }; }
+        var c = (fab.low_cut + fab.high_cut) / 2 + s;
+        return { lo: c - w / 2, hi: c + w / 2 };
+    }
+    function txtShift(s) { return s === 0 ? '0' : (s > 0 ? '+' : '−') + Math.abs(s); }
+    function ponerShift(s) {
+        var d = demod(), m = mod();
+        if (!d || !lado(m)) return;
+        var n = conShift(d, m, s);
+        if (poner(n.lo, n.hi)) { fil = 1; guardar(); }
     }
 
     // ---- desplegable con el aspecto de los menús de rig_skin ----
@@ -215,58 +234,53 @@
         abrir(a, titulo, items);
     }
 
-    // ---- desplegable del corte bajo ----
+    // ---- desplegable del IF SHIFT ----
     function menuBajo(a) {
-        var d = demod(), m = mod(), mo = modeObj(m), l = ajustable(d) ? lado(d, m) : null;
+        var d = demod(), m = mod(), mo = modeObj(m), l = ajustable(d) ? lado(m) : null;
         if (!l) {
             var nombre = mo ? mo.name : m;
-            abrir(a, 'Corte bajo', [{ t: m === 'cw' ? 'CW: el filtro va centrado en el tono; usa FIL'
-                : nombre + ': sin corte bajo (el filtro es simétrico o fijo)' }]);
+            abrir(a, 'IF SHIFT', [{ t: m === 'cw' ? 'CW: el filtro va centrado en el tono; usa FIL'
+                : nombre + ': ancho fijo, sin filtro ajustable' }]);
             return;
         }
-        var v = bajo(d, l), items = [], chips = [];
-        BAJOS.forEach(function (b) {
-            var n = conBajo(d, l, b);
+        var s = shift(d, m), items = [], chips = [];
+        SHIFTS.forEach(function (v) {
+            var n = conShift(d, m, v);
             if (!cabe(d, n.lo, n.hi)) return;
-            chips.push({ t: String(b), sel: Math.abs(v - b) < 3, fn: function () {
-                var dd = demod(), ll = dd && lado(dd, mod()); if (!ll) return;
-                var nn = conBajo(dd, ll, b); if (poner(nn.lo, nn.hi)) { fil = 1; guardar(); }
-            } });
+            chips.push({ t: txtShift(v), sel: Math.abs(s - v) < 3, fn: function () { ponerShift(v); } });
         });
-        items.push({ sub: 'Corte bajo (Hz)' });
+        var ssb = l !== 'sim';
+        items.push({ sub: 'Desplazar sin cambiar el ancho (Hz)' + (ssb ? ' · + agudo / − grave' : '') });
         items.push({ chips: chips });
-        function subir(dv) {
+        function paso(dv) {
             return function () {
-                var dd = demod(), ll = dd && lado(dd, mod());
-                if (ll) { var nn = conBajo(dd, ll, r50(bajo(dd, ll) + dv)); if (poner(nn.lo, nn.hi)) { fil = 1; guardar(); } }
-                reabrir(menuBajo, a);
+                var dd = demod(), v = dd && shift(dd, mod());
+                if (v !== null && v !== undefined) ponerShift(Math.round((v + dv) / 50) * 50);
+                reabrir(menuBajo, a);   // sigue abierto para seguir ajustando
             };
         }
         items.push({ t: '──────────' });
-        items.push({ t: '↑  Subir 50 Hz', fn: subir(50), seguir: true });
-        items.push({ t: '↓  Bajar 50 Hz', fn: subir(-50), seguir: true });
-        items.push({ t: '↺  Estándar SSB (' + BAJO_STD + ' Hz)', fn: function () {
-            var dd = demod(), ll = dd && lado(dd, mod()); if (!ll) return;
-            var nn = conBajo(dd, ll, BAJO_STD); if (poner(nn.lo, nn.hi)) { fil = 1; guardar(); }
-        } });
-        abrir(a, 'Corte bajo  ·  ahora ' + v + ' Hz', items);
+        items.push({ t: (ssb ? '↑  +50 Hz (más agudo)' : '→  +50 Hz (hacia arriba)'), fn: paso(50), seguir: true });
+        items.push({ t: (ssb ? '↓  −50 Hz (más grave)' : '←  −50 Hz (hacia abajo)'), fn: paso(-50), seguir: true });
+        items.push({ t: '⊙  0  (centro, posición de fábrica)', sel: s === 0, fn: function () { ponerShift(0); } });
+        abrir(a, 'IF SHIFT  ·  ' + txtShift(s) + ' Hz  ·  ' + Math.round(d.low_cut) + ' / ' + Math.round(d.high_cut), items);
     }
 
-    // ---- letrero BAJO (en el sitio de TS) ----
+    // ---- letrero SHIFT (en el sitio de TS) ----
     var $bajo = null;
     function letreroBajo() {
         var $info = $('#openwebrx-panel-receiver #owrx-rig-info');
         if (!$info.length) return;
         if (!$bajo || !$.contains(document.documentElement, $bajo[0])) {
             $bajo = $('<div class="owrx-rig-info-step rigfil-bajo" translate="no">').addClass('notranslate')
-                .attr('title', 'Corte bajo del filtro (LSB/USB): clic para cambiarlo');
+                .attr('title', 'IF SHIFT: desplaza el filtro sin cambiar el ancho. Clic para cambiarlo');
             var $f = $info.children('.owrx-rig-info-filter').first();
             if ($f.length) $f.after($bajo); else $info.append($bajo);
         }
-        var d = demod(), l = ajustable(d) ? lado(d, mod()) : null;
-        var txt = 'BAJO ' + (l ? bajo(d, l) : '--');
+        var d = demod(), m = mod(), s = ajustable(d) && lado(m) ? shift(d, m) : null;
+        var txt = 'SHIFT ' + (s === null || s === undefined ? '--' : txtShift(s));
         if ($bajo.text() !== txt) $bajo.text(txt);
-        // el letrero TS sobra siempre (pantalla normal y DUAL): BAJO ocupa su sitio
+        // el letrero TS sobra siempre (pantalla normal y DUAL): SHIFT ocupa su sitio
         $info.children('.owrx-rig-info-step').not('.rigfil-bajo').addClass('rigfil-oculto');
     }
 

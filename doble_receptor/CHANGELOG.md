@@ -1,5 +1,8 @@
 # Historial de doble_receptor
 
+## v2.1.19 — 23-nov-2026
+- Las ventanas del MAIN (LST, DX, SAT, MEM...) ya no se quedan pegadas al ratón. El SUB es una página dentro de un marco: si al mover o agrandar una ventana se soltaba el botón encima del SUB, el MAIN no se enteraba, y la ventana seguía moviéndose o creciendo sola (LST se ponía muy ancha) hasta el siguiente clic. Ahora, mientras el botón está pulsado en el MAIN, el SUB no recibe el ratón. Instalada en el servidor el 23-11-2026.
+
 ## v2.1.18 — 20-nov-2026
 - Flechas ◀ ▶ de la cascada (Tune down / Tune up) también en el MAIN. La caja de la escala del MAIN se recortaba con `overflow: hidden` y las tapaba. Ahora se recorta solo a los lados (`overflow-x: clip`), así que con zoom la cinta sigue sin meterse en el SUB. Instalada en el servidor el 20-11-2026.
 

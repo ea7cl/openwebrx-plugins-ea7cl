@@ -1,5 +1,9 @@
 # Cambios — listeners (LST) versión EA7CL
 
+## v1.6 — 23-nov-2026
+- La ventana mide la pantalla real para quedarse dentro de ella. Con el doble receptor (DUAL), el MAIN cree que la pantalla es solo su mitad, y la ventana saltaba sola a esa mitad si se ponía encima del SUB.
+- Instalada en el servidor `openwebrx` el 23-11-2026 (copia de la v1.5 en `/home/ea7cl/listeners.bak-2026-11-23-1655`).
+
 ## v1.5 — 1-nov-2026
 - Los nombres de perfil y de receptor salen siempre en español, aunque algún oyente tenga el
   traductor del navegador. Antes, si el primer oyente de un perfil lo tenía activo, la cabecera de

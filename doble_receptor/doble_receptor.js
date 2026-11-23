@@ -18,7 +18,7 @@
 
     var DR = Plugins.doble_receptor = Plugins.doble_receptor || {};
     DR._version = 2.1;
-    DR.version = '2.1.18';
+    DR.version = '2.1.19';
 
     var raizHtml = document.documentElement;
 
@@ -1102,9 +1102,39 @@
         }, 500);
     }
 
+    // 2.1.19: el SUB es un iframe. Si al mover o agrandar una ventana del
+    // MAIN (LST, DX, SAT, MEM...) se suelta el ratón encima del SUB, el MAIN
+    // no se entera y la ventana sigue pegada al ratón (se movía o se ponía
+    // muy ancha sola hasta el siguiente clic). Mientras el botón está
+    // pulsado en el MAIN, el SUB no recibe el ratón: todo llega al MAIN
+    function ratonSoloMain() {
+        var tapado = false;
+        function tapar() {
+            if (!enDual()) return;
+            var f = document.getElementById('drx-sub');
+            if (!f) return;
+            f.style.pointerEvents = 'none';
+            tapado = true;
+        }
+        function destapar() {
+            if (!tapado) return;
+            tapado = false;
+            var f = document.getElementById('drx-sub');
+            if (f) f.style.pointerEvents = '';
+        }
+        window.addEventListener('pointerdown', tapar, true);
+        window.addEventListener('mousedown', tapar, true);
+        ['pointerup', 'pointercancel', 'mouseup', 'blur', 'dragend'].forEach(function (t) {
+            window.addEventListener(t, function () { setTimeout(destapar, 0); }, true);
+        });
+        // por si acaso: con el botón suelto y el ratón moviéndose, se destapa
+        window.addEventListener('mousemove', function (e) { if (tapado && !e.buttons) destapar(); }, true);
+    }
+
     DR.init = function () {
         setInterval(cadaRato, 700);
         vigilarMarcado();
+        if (ROL === 'main') ratonSoloMain();
         if (ROL === 'main') {
             window.addEventListener('resize', function () { if (enDual()) colocar(); });
             // se recuerda: si se dejó en DUAL, se vuelve a DUAL

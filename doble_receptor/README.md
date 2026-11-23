@@ -1,6 +1,6 @@
 # doble_receptor — Doble receptor MAIN / SUB (EA7CL)
 
-Plugin de receptor para OpenWebRX+, versión **2.1.18**. Se instaló en el servidor `openwebrx` el 20-nov-2026, en **modo enlace**. Es idéntico al de este repositorio (comprobado con SHA-256). Necesita `rig_skin`, `anti_iframe` **0.2** y `rig_fil_ea7cl` **0.2**; el instalador pone estas dos versiones.
+Plugin de receptor para OpenWebRX+, versión **2.1.19**. Se instaló en el servidor `openwebrx` el 20-nov-2026, en **modo enlace**, y se actualizó a la 2.1.19 el 23-nov-2026. Es idéntico al de este repositorio (comprobado con SHA-256). Necesita `rig_skin`, `anti_iframe` **0.2** y `rig_fil_ea7cl` **0.2**; el instalador pone estas dos versiones.
 
 ![MAIN y SUB](capturas/instalado-ubuntu-enlace-dual.jpg)
 
@@ -33,7 +33,7 @@ En los modos `enlace` y `apagado`, los oyentes normales ni siquiera descargan el
 
 | Archivo | Para qué |
 |---|---|
-| `doble_receptor.js`, `doble_receptor.css` | El plugin (2.1.18). |
+| `doble_receptor.js`, `doble_receptor.css` | El plugin (2.1.19). |
 | `scripts/doble_receptor.sh` | `estado` / `aplicar [modo]` / `modo enlace\|todos\|apagado` / `deshacer`. |
 | `original/` | `anti_iframe` 0.1 y `rig_fil_ea7cl` 0.1, las versiones de antes, que el instalador reconoce. |
 | `../anti_iframe/anti_iframe.js`, `../rig_fil_ea7cl/rig_fil_ea7cl.js` | Las 0.2 que pone el instalador. |

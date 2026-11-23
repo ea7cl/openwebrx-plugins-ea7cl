@@ -831,16 +831,20 @@ Plugins.listeners.init = async function () {
 	// EA7CL: ventana con ancho minimo para las localidades y siempre dentro
 	// de la pantalla (OpenWebRX+ la coloca por su centro y recuerda el ancho
 	// antiguo; al ensancharla podia quedar medio fuera por la izquierda)
+	// EA7CL v1.6: se mide la pantalla real (document.documentElement.clientWidth).
+	// Con el doble receptor (DUAL) el MAIN ve window.innerWidth = su mitad, y la
+	// ventana saltaba sola a esa mitad si se ponia encima del SUB
 	setInterval(function () {
 		var w = document.getElementById('plugin-window-listeners');
 		if (!w || w.offsetParent === null) return;
-		var minW = Math.min(400, Math.round(window.innerWidth * 0.96));
+		var ancho = document.documentElement.clientWidth || window.innerWidth;
+		var minW = Math.min(400, Math.round(ancho * 0.96));
 		if (parseFloat(w.style.width) < minW) w.style.width = minW + 'px';
 		var r = w.getBoundingClientRect();
 		var left = parseFloat(w.style.left);
 		if (!isFinite(left)) return;
 		if (r.left < 4) w.style.left = (left + (4 - r.left)) + 'px';
-		else if (r.right > window.innerWidth - 4) w.style.left = (left - (r.right - window.innerWidth + 4)) + 'px';
+		else if (r.right > ancho - 4) w.style.left = (left - (r.right - ancho + 4)) + 'px';
 	}, 1000);
 	this.state.pollTimer = setInterval(function () { self._publish(); }, 1000);
 	this.state.renderTimer = setInterval(function () { self._render(); }, 30000);

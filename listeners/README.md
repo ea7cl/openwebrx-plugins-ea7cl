@@ -26,7 +26,7 @@ Todas están dentro de `plugin/listeners.js` y `plugin/listeners.css`, marcadas 
 - País y localidad aproximada de cada oyente, con su bandera (`MOSTRAR_LOCALIDAD = false` → solo bandera).
 - Cada modo con su color, como en el DX cluster (CW amarillo, USB rosa, LSB verde lima, FT8 cian,
   FT4 azul, digitales violeta, NFM rojo, WFM ocre, AM naranja).
-- Ventana con ancho mínimo y siempre dentro de la pantalla.
+- Ventana con ancho mínimo y siempre dentro de la pantalla. Desde la v1.6 se mide la pantalla real, así que con el doble receptor también puede quedarse encima del SUB.
 - **Frecuencias en MHz con precisión de 10 Hz (v1.3):** 432.275<sub>25</sub> MHz, 10489.540<sub>00</sub> MHz.
   Los dos últimos dígitos (centenas y decenas de Hz) van más pequeños y en gris (v1.4)
   (`.owrx-listeners__decimals`).

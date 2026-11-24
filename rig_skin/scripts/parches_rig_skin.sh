@@ -63,3 +63,11 @@ echo -n "  DX V/UHF 800 km:    "; grep -c "d > 800) return;" "$JS"
 #    se abre por https (puerto 8443). Con https:// funciona desde los dos.
 sed -i "s#'http://www.dxsummit.fi/#'https://www.dxsummit.fi/#g" "$JS"
 echo -n "  dxsummit por https: "; grep -c "'https://www.dxsummit.fi/" "$JS"
+
+# 6) SAT: al cargar la pagina con la ventana de pases abierta, la posicion del
+#    receptor aun no ha llegado y se quedaba "posicion del receptor sin configurar".
+#    Se vuelve a mirar a los 2 s (fallo de rig_skin, tambien en la 0.10.20).
+if ! grep -q "EA7CL: la posicion llega" "$JS"; then
+sed -i "s#\$head.text('receiver position not configured');#& setTimeout(function () { if (\$sat.hasClass('visible')) refresh(); }, 2000);   // EA7CL: la posicion llega despues#" "$JS"
+fi
+echo -n "  SAT posicion:       "; grep -c "EA7CL: la posicion llega" "$JS"

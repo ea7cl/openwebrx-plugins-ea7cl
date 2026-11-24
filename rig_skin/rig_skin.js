@@ -9,7 +9,7 @@
  * knob step follows the tuning step selector.
  */
 
-Plugins.rig_skin._version = '0.10.20';
+Plugins.rig_skin._version = '0.10.23';
 Plugins.rig_skin._author = 'SV1DOD / HB9ISH';
 
 // where this script was loaded from, for fetching companion files
@@ -394,11 +394,13 @@ Plugins.rig_skin.createDxWindow = function () {
                 added = true;
             }
         });
+        if (added && now - prunedAt > 60000) prune();
         if (added && open) render();
     }
 
+    var prunedAt = 0;
     function prune() {
-        var now = Date.now();
+        var now = prunedAt = Date.now();
         Object.keys(spots).forEach(function (k) {
             if (now - spots[k].time > MAX_AGE) {
                 delete spots[k];
@@ -425,7 +427,9 @@ Plugins.rig_skin.createDxWindow = function () {
                     var d = distKm(s.loc);
                     if (d !== null && d > 800) return;   // EA7CL: 800 km
                 }
-                spots[normKey(s)] = s;
+                var k = normKey(s);
+                if (spots[k] && spots[k].time >= s.time) return;
+                spots[k] = s;
                 sortedCache = null;
             });
         } catch (e) {}
@@ -518,7 +522,34 @@ Plugins.rig_skin.createDxWindow = function () {
     // country flag from the spot's DXCC entity, when the feed sent one
     function flagOf(s) {
         var f = s.dxcc && Plugins.rig_skin._dxccFlag[s.dxcc];
-        return f ? f + ' ' : '';
+        if (!f) return '';
+        if (flagsDrawn()) return f + ' ';
+        // a flag is the two letters of its country code in a special
+        // alphabet: show the plain letters
+        var code = Array.from(f).map(function (ch) {
+            return String.fromCharCode(ch.codePointAt(0) - 0x1F1E6 + 65);
+        }).join('');
+        return /^[A-Z]{2}$/.test(code) ? code + ' ' : '';
+    }
+
+    // Windows has no flag pictures (Chrome and Edge show two letters in
+    // a box or nothing): a drawn flag has colors, a fallback has none
+    function flagsDrawn() {
+        if (typeof Plugins.rig_skin._flags === 'boolean') return Plugins.rig_skin._flags;
+        var ok = false;
+        try {
+            var c = document.createElement('canvas');
+            c.width = 40; c.height = 28;
+            var x = c.getContext('2d');
+            x.font = '18px sans-serif';
+            x.textBaseline = 'top';
+            x.fillText('\uD83C\uDDEA\uD83C\uDDF8', 2, 2);
+            var d = x.getImageData(0, 0, 40, 28).data;
+            for (var i = 0; i < d.length && !ok; i += 4) {
+                ok = d[i + 3] > 50 && (Math.abs(d[i] - d[i + 1]) > 40 || Math.abs(d[i + 1] - d[i + 2]) > 40);
+            }
+        } catch (e) {}
+        return (Plugins.rig_skin._flags = ok);
     }
 
     // --- rendering ---
@@ -731,8 +762,15 @@ Plugins.rig_skin.createDxWindow = function () {
     function showTip(spot, clientX, clientY) {
         if (!spot) { $tip.removeClass('show'); return; }
         var bd = bearingDist(spot.loc);
-        $tip.html(flagOf(spot) + spot.call + (bd ? '<br>' + bd[0] + '&deg; ' + bd[1] : '') +
-            (spot.cont ? '<br>' + spot.cont : ''));
+        // spot fields come from the network: as text, never as markup
+        var lines = [flagOf(spot) + spot.call];
+        if (bd) lines.push(bd[0] + '\u00b0 ' + bd[1]);
+        if (spot.cont) lines.push(spot.cont);
+        $tip.empty();
+        lines.forEach(function (l, i) {
+            if (i) $tip.append('<br>');
+            $tip.append(document.createTextNode(l));
+        });
         var lr = $lcd[0].getBoundingClientRect();
         $tip.css({ left: (clientX - lr.left + 10) + 'px', top: (clientY - lr.top + 10) + 'px' })
             .addClass('show');
@@ -814,10 +852,10 @@ Plugins.rig_skin.createDxWindow = function () {
             cx: t.length > 1 ? (t[0].clientX + t[1].clientX) / 2 : t[0].clientX,
             cy: t.length > 1 ? (t[0].clientY + t[1].clientY) / 2 : t[0].clientY };
     });
-    $(canvas).on('touchmove', function (e) {
+    canvas.addEventListener('touchmove', function (e) {
         if (!touchStart) return;
         e.preventDefault();
-        var t = e.originalEvent.touches;
+        var t = e.touches;
         var scale = MW / canvas.getBoundingClientRect().width;
         if (t.length > 1 && touchStart.dist) {
             var f = touchDist(t) / touchStart.dist;
@@ -990,14 +1028,12 @@ Plugins.rig_skin.createDxWindow = function () {
             .fail(function () { landLoading = false; });
     }
 
-    // Backlog from DXSummit, whose API allows browser calls but only
-    // over plain http (the https endpoint hangs). HolyCluster's history
-    // endpoint sends no CORS headers at all, so a browser can never read
+    // Backlog from DXSummit, whose API allows browser calls. HolyCluster's
+    // history endpoint sends no CORS headers at all, so a browser can never read
     // it and asking only fills the console with errors; live spots
     // stream from its websocket either way, which CORS does not gate.
     var backlogAt = 0;
     function backlog() {
-        if (location.protocol !== 'http:') return;
         // the live feed keeps the cache warm; re-downloading the whole
         // history on every window toggle would fetch what we have
         if (Date.now() - backlogAt < 15 * 60 * 1000) return;
@@ -1188,9 +1224,10 @@ Plugins.rig_skin.createSatWindow = function () {
     var $foot = $('<div>').addClass('owrx-rig-dx-foot')
         .append($('<span>').text('click a bird for its path, click again to tune'))
         .append($age);
+    // UTC like the pass list above it
     function hhmm(t) {
         var d = new Date(t);
-        return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+        return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2) + ' UTC';
     }
     // what the orbit update is doing, never an old date
     function showAge() {
@@ -1409,6 +1446,8 @@ Plugins.rig_skin.createSatWindow = function () {
         $tip.css({ left: (e.clientX - lr.left + 10) + 'px', top: (e.clientY - lr.top + 10) + 'px' })
             .addClass('show');
     });
+
+    $(canvas).on('mouseleave', function () { $tip.removeClass('show'); });
 
     // first click pins a bird's path; a second click on it tunes,
     // a click on open water clears the selection
@@ -1656,7 +1695,9 @@ Plugins.rig_skin.createWatch = function () {
     function load() {
         try {
             if (typeof LS !== 'undefined' && LS.has('rig_watch')) {
-                return JSON.parse(LS.loadStr('rig_watch')) || [];
+                var list = JSON.parse(LS.loadStr('rig_watch'));
+                // a damaged entry must not stop the skin from loading
+                return Array.isArray(list) ? list.filter(function (w) { return w && w.f; }) : [];
             }
         } catch (e) {}
         return [];
@@ -1767,7 +1808,9 @@ Plugins.rig_skin.createWatch = function () {
             .html('&#x1F507;')
             .on('click', function () { toggleSpeaker(w); });
         function closeWatch() {
-            watches.splice(watches.indexOf(w), 1);
+            var at = watches.indexOf(w);
+            if (at < 0) return;
+            watches.splice(at, 1);
             w.frame.remove();
             relabel();
             save();
@@ -1993,7 +2036,8 @@ Plugins.rig_skin.createWatch = function () {
         }
         if (autoW) {
             // the dial moved away, or the watch is gone: hands off
-            if (watches.indexOf(autoW) < 0 || !playing(autoW)) {
+            var hopping = Plugins.rig_skin._tuning && Math.abs(Plugins.rig_skin._tuning.f - autoW.f) < 50;
+            if (watches.indexOf(autoW) < 0 || (!playing(autoW) && !hopping)) {
                 autoW.snoozed = true;
                 autoW = null;
                 return;
@@ -2389,6 +2433,9 @@ Plugins.rig_skin.createVfoKeys = function () {
             if (LS.has('rig_vfo_active')) active = LS.loadStr('rig_vfo_active');
         }
     } catch (e) {}
+    // a damaged saved value must not stop the skin from loading
+    if (!vfoA || typeof vfoA !== 'object') vfoA = { freq: null, mod: null };
+    if (!vfoB || typeof vfoB !== 'object') vfoB = { freq: null, mod: null };
     if (active !== 'A' && active !== 'B') active = 'A';
 
     function slot(id) { return id === 'A' ? vfoA : vfoB; }
@@ -2476,7 +2523,8 @@ Plugins.rig_skin.createVfoKeys = function () {
         // can spin an individual digit like on an SDR console. The spans
         // are built once per string length; a dial step only changes text.
         var spans = box.$freq.children();
-        if (spans.length !== t.length) {
+        // also when a box goes from dashes to digits of the same length
+        if (spans.length !== t.length || !!hz !== box.$freq.children('.owrx-rig-digit').length > 0) {
             box.$freq.empty();
             var place = 10;   // EA7CL: la ultima cifra es la de 10 Hz
             for (var i = t.length - 1; i >= 0; i--) {
@@ -2505,7 +2553,7 @@ Plugins.rig_skin.createVfoKeys = function () {
         var steps = Plugins.rig_skin.wheelSteps(e.originalEvent);
         if (!steps) return;
         var place = parseInt($(this).attr('data-place'));
-        Plugins.rig_skin.tuneTo(UI.getFrequency() + steps * place, null);
+        Plugins.rig_skin.tuneTo(Plugins.rig_skin.tuneTarget() + steps * place, null);
     });
 
     // update the tuned box live on every dial move by hooking the stock
@@ -2632,8 +2680,15 @@ Plugins.rig_skin.createVfoKeys = function () {
         // user turned the dial: if parked on the other VFO, stay there and drop DW
         if (expected !== null && Math.abs(UI.getFrequency() - expected) > 1) {
             if (onOther) {
+                // the watched VFO becomes the active one; the VFO we
+                // came from keeps its own frequency
+                var home = slot(active);
+                home.freq = returnTo.freq;
+                home.mod = returnTo.mod;
+                active = other(active);
                 onOther = false;
                 setDw(false);
+                save();
                 return;
             }
             expected = UI.getFrequency();
@@ -2772,8 +2827,13 @@ Plugins.rig_skin.createVfoKeys = function () {
 Plugins.rig_skin.tuneTo = function (f, mode) {
     if (!f || typeof UI === 'undefined') return;
     if (typeof UI.toggleScanner === 'function') UI.toggleScanner(false);
+    // a newer target replaces one still on its way
+    var was = Plugins.rig_skin._tuning;
+    if (was) { clearInterval(was.iv); clearTimeout(was.timer); }
+    Plugins.rig_skin._tuning = null;
 
     function land() {
+        Plugins.rig_skin._tuning = null;
         if (mode) UI.setModulation(mode);
         UI.setFrequency(f, false);
     }
@@ -2789,18 +2849,25 @@ Plugins.rig_skin.tuneTo = function (f, mode) {
     try { key = UI.getDemodulatorPanel().getMagicKey(); } catch (e) {}
     ws.send(JSON.stringify({ type: 'setfrequency', params: { frequency: f, key: key } }));
     var tries = 0;
-    var iv = setInterval(function () {
+    var job = Plugins.rig_skin._tuning = { f: f };
+    job.iv = setInterval(function () {
         if (Math.abs(f - center_freq) < bandwidth / 2) {
-            clearInterval(iv);
+            clearInterval(job.iv);
             // give the demodulator a moment to restart on the new window
-            setTimeout(land, 500);
+            job.timer = setTimeout(land, 500);
         } else if (++tries > 20) {
             // the server never moved the window there: the SDR cannot
             // reach this frequency
-            clearInterval(iv);
+            clearInterval(job.iv);
+            Plugins.rig_skin._tuning = null;
             Plugins.rig_skin.flash('out of range');
         }
     }, 250);
+};
+
+// where the dial is heading: a target still on its way, or the dial itself
+Plugins.rig_skin.tuneTarget = function () {
+    return Plugins.rig_skin._tuning ? Plugins.rig_skin._tuning.f : UI.getFrequency();
 };
 
 // brief message on the LCD, e.g. when a frequency cannot be reached
@@ -2852,29 +2919,29 @@ Plugins.rig_skin.createSatScreen = function () {
 
     // built-in orbits, used only when nothing newer is at hand;
     // refreshed with tools/sat_seed.py before a release
-    var SAT_SEED = { date: "2026-11-05", tles: {
-        7530: { line1: "1 07530U 74089B   26308.85195005 -.00000033  00000-0  81902-4 0  9996", line2: "2 07530 101.9884 323.5550 0012073 222.0824 315.0590 12.53700335378149" },
-        24278: { line1: "1 24278U 96046B   26308.85979036  .00000013  00000-0  45481-4 0  9994", line2: "2 24278  98.5112 138.4211 0350863  91.3345 272.8008 13.53280211492199" },
-        25544: { line1: "1 25544U 98067A   26308.88559265  .00005352  00000-0  10457-3 0  9992", line2: "2 25544  51.6327 323.8448 0007212 348.6490  11.4335 15.49180468593565" },
-        26931: { line1: "1 26931U 01043C   26308.54640880  .00000058  00000-0  52649-4 0  9996", line2: "2 26931  67.0507 241.2225 0006246 277.0276  83.0115 14.31999247310545" },
-        27607: { line1: "1 27607U 02058C   26308.60467955  .00001010  00000-0  13638-3 0  9994", line2: "2 27607  64.5533  54.4524 0068724 236.5057 122.9470 14.83305439285289" },
-        39444: { line1: "1 39444U 13066AE  26308.51084918  .00005171  00000-0  30754-3 0  9991", line2: "2 39444  97.8457 283.2051 0036944  85.7274 274.8175 15.11143282700847" },
-        43017: { line1: "1 43017U 17073E   26308.88506528  .00006278  00000-0  26440-3 0  9996", line2: "2 43017  97.4467 173.2248 0144476 201.3131 158.2046 15.14633203486673" },
-        43678: { line1: "1 43678U 18084H   26308.92667112  .00001735  00000-0  14136-3 0  9996", line2: "2 43678  98.1144 151.3251 0012925  69.0655 291.1949 15.00880255437323" },
-        43803: { line1: "1 43803U 18099AX  26308.70451457  .00016962  00000-0  45675-3 0  9991", line2: "2 43803  97.3971  12.3121 0006459 121.0599 239.1281 15.37896395435191" },
-        44909: { line1: "1 44909U 19096E   26308.80708458  .00000002  00000-0 -39091-4 0  9999", line2: "2 44909  82.5211 246.2485 0217482 175.2826 185.0397 12.79749737320333" },
-        57166: { line1: "1 57166U 23091A   26308.97389280 -.00000016  00000-0  11856-4 0  9998", line2: "2 57166  98.5913   0.9432 0004979 115.3899 244.7796 14.24055525174559" },
-        59051: { line1: "1 59051U 24039A   26308.93712145  .00000016  00000-0  26698-4 0  9991", line2: "2 59051  98.7227 266.5924 0007943 118.1538 242.0443 14.22442151139278" },
-        61781: { line1: "1 61781U 24199AY  26308.89181507  .00007596  00000-0  20774-3 0  9996", line2: "2 61781  97.2759 176.2890 0013702 155.0746 205.1163 15.37553441155533" },
-        63213: { line1: "1 63213U 25052D   26308.16205401  .00016680  00000-0  42851-3 0  9991", line2: "2 63213  97.3725 205.0998 0002519  28.2597 331.8785 15.39367973 91618" },
-        63214: { line1: "1 63214U 25052E   26308.46194457  .00019734  00000-0  51039-3 0  9994", line2: "2 63214  97.3724 205.3015 0002568  30.2988 329.8406 15.39125033 91652" },
-        63215: { line1: "1 63215U 25052F   26307.24191814  .00013892  00000-0  36108-3 0  9993", line2: "2 63215  97.3724 204.0596 0002737  33.4782 326.6636 15.39048080 91463" },
-        63217: { line1: "1 63217U 25052H   26308.36783092  .00015360  00000-0  40793-3 0  9991", line2: "2 63217  97.3699 204.6296 0003245  33.2380 326.9069 15.38361420 91611" },
-        63218: { line1: "1 63218U 25052J   26308.94120889  .00018571  00000-0  49072-3 0  9991", line2: "2 63218  97.3698 205.2520 0002942  37.2512 322.8937 15.38476552 91704" },
-        63219: { line1: "1 63219U 25052K   26308.49696481  .00018367  00000-0  48675-3 0  9999", line2: "2 63219  97.3701 204.7655 0003165  32.7258 327.4183 15.38389374 91639" },
-        63237: { line1: "1 63237U 25052AD  26308.47742126  .00016930  00000-0  48478-3 0  9990", line2: "2 63237  97.3761 203.7751 0006443  23.6344 336.5194 15.35982952 91538" },
-        63238: { line1: "1 63238U 25052AE  26308.61538590  .00016217  00000-0  47057-3 0  9995", line2: "2 63238  97.3763 203.7590 0006444  25.5447 334.6114 15.35574058 91544" },
-        63239: { line1: "1 63239U 25052AF  26308.42918739  .00015708  00000-0  45609-3 0  9997", line2: "2 63239  97.3761 203.5450 0006501  21.8344 338.3176 15.35561110 91516" }
+    var SAT_SEED = { date: "2026-11-23", tles: {
+        7530: { line1: "1 07530U 74089B   26327.01253691 -.00000031  00000-0  96824-4 0  9998", line2: "2 07530 101.9865 341.8935 0012223 187.2351 199.8169 12.53700722380426" },
+        24278: { line1: "1 24278U 96046B   26326.38187627 -.00000022  00000-0  12153-4 0  9990", line2: "2 24278  98.5099 153.5261 0350608  45.9700 316.9765 13.53281222494569" },
+        25544: { line1: "1 25544U 98067A   26327.20353680  .00007096  00000-0  13418-3 0  9999", line2: "2 25544  51.6320 233.1644 0007426  56.0849 304.0845 15.49560282596403" },
+        26931: { line1: "1 26931U 01043C   26327.26435429  .00000079  00000-0  60421-4 0  9997", line2: "2 26931  67.0496 192.8074 0006367 277.8505  82.1874 14.32006821313220" },
+        27607: { line1: "1 27607U 02058C   26325.59433638  .00000971  00000-0  13188-3 0  9997", line2: "2 27607  64.5532   1.8664 0067388 233.3373 126.1527 14.83359513287801" },
+        39444: { line1: "1 39444U 13066AE  26326.65217846  .00005555  00000-0  32759-3 0  9997", line2: "2 39444  97.8471 301.8171 0035704  26.8654 333.4415 15.11460867703588" },
+        43017: { line1: "1 43017U 17073E   26327.05103132  .00005429  00000-0  22592-3 0  9991", line2: "2 43017  97.4439 191.0196 0145356 138.4646 222.7741 15.14960399489425" },
+        43678: { line1: "1 43678U 18084H   26327.25999253  .00001568  00000-0  12795-3 0  9990", line2: "2 43678  98.1160 170.4673 0011966  10.5047 349.6424 15.00966484440073" },
+        43803: { line1: "1 43803U 18099AX  26327.11309090  .00012493  00000-0  32843-3 0  9990", line2: "2 43803  97.3945  30.8653 0006367  66.8832 293.3084 15.38710725438022" },
+        44909: { line1: "1 44909U 19096E   26327.17973268  .00000021  00000-0  32887-4 0  9999", line2: "2 44909  82.5224 234.0431 0218217 132.4238 229.5552 12.79750057322686" },
+        57166: { line1: "1 57166U 23091A   26327.31222834 -.00000003  00000-0  17331-4 0  9998", line2: "2 57166  98.5885  18.8622 0004990  73.6554 286.5174 14.24057100177168" },
+        59051: { line1: "1 59051U 24039A   26327.29619813 -.00000006  00000-0  17224-4 0  9994", line2: "2 59051  98.7256 284.7642 0008117  71.8936 288.3125 14.22444309141887" },
+        61781: { line1: "1 61781U 24199AY  26327.24226331  .00006479  00000-0  17537-3 0  9993", line2: "2 61781  97.2735 194.4722 0014965  94.9595 265.3359 15.37916434158351" },
+        63213: { line1: "1 63213U 25052D   26327.13690667  .00014247  00000-0  35486-3 0  9994", line2: "2 63213  97.3730 224.2141 0000433 114.3065 245.8227 15.40351542 94533" },
+        63214: { line1: "1 63214U 25052E   26327.17999669  .00015980  00000-0  40124-3 0  9993", line2: "2 63214  97.3725 224.1492 0000421  96.0939 264.0355 15.40079436 94533" },
+        63215: { line1: "1 63215U 25052F   26327.19563303  .00016311  00000-0  40986-3 0  9993", line2: "2 63215  97.3733 224.1512 0000453  92.1500 267.9798 15.40051223 94539" },
+        63217: { line1: "1 63217U 25052H   26327.16038275  .00013851  00000-0  35736-3 0  9990", line2: "2 63217  97.3699 223.5237 0000671  13.4930 346.6333 15.39279572 94508" },
+        63218: { line1: "1 63218U 25052J   26325.97715339  .00016552  00000-0  42562-3 0  9997", line2: "2 63218  97.3705 222.3824 0000871  27.6325 332.4967 15.39341764 94322" },
+        63219: { line1: "1 63219U 25052K   26325.98903415  .00017053  00000-0  43952-3 0  9994", line2: "2 63219  97.3701 222.3521 0000781   9.4297 350.6964 15.39264997 94320" },
+        63237: { line1: "1 63237U 25052AD  26326.97405157  .00011319  00000-0  31684-3 0  9992", line2: "2 63237  97.3760 222.3184 0003649 317.2587  42.8373 15.36801455 94370" },
+        63238: { line1: "1 63238U 25052AE  26325.94471147  .00014863  00000-0  42143-3 0  9990", line2: "2 63238  97.3763 221.1211 0003820 325.4605  34.6390 15.36332886 94202" },
+        63239: { line1: "1 63239U 25052AF  26327.19157568  .00013597  00000-0  38541-3 0  9998", line2: "2 63239  97.3763 222.3422 0003767 312.6489  47.4437 15.36363568 94393" }
     } };
 
     function tuneSat(s) {
@@ -2912,14 +2979,29 @@ Plugins.rig_skin.createSatScreen = function () {
 
     var passes = null, timer = null;
 
-    function ensureLib(cb) {
-        if (typeof satellite !== 'undefined') return cb();
+    // the callback gets false when the library cannot be loaded; after
+    // a failure only a click (force) tries again within 10 minutes
+    var libWaiting = null, libFailedAt = 0;
+    function ensureLib(cb, force) {
+        if (typeof satellite !== 'undefined') return cb(true);
+        if (libWaiting) { libWaiting.push(cb); return; }
+        if (!force && Date.now() - libFailedAt < 600000) return cb(false);
+        libWaiting = [cb];
         var s = document.createElement('script');
+        function done(ok) {
+            var waiting = libWaiting;
+            libWaiting = null;
+            if (!ok) {
+                libFailedAt = Date.now();
+                tleFail = true;
+                s.remove();
+                $head.text('orbit library unavailable');
+            }
+            waiting.forEach(function (f) { f(ok); });
+        }
         s.src = 'https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js';
-        s.onload = cb;
-        s.onerror = function () {
-            $head.text('orbit library unavailable');
-        };
+        s.onload = function () { done(true); };
+        s.onerror = function () { done(false); };
         document.head.appendChild(s);
     }
 
@@ -2942,7 +3024,9 @@ Plugins.rig_skin.createSatScreen = function () {
     }
     function newest(into, from) {
         Object.keys(from || {}).forEach(function (id) {
-            if (!into[id] || epoch(from[id].line1) > epoch(into[id].line1)) into[id] = from[id];
+            var t = from[id];
+            if (!t || typeof t.line1 !== 'string' || typeof t.line2 !== 'string') return;
+            if (!into[id] || epoch(t.line1) > epoch(into[id].line1)) into[id] = t;
         });
         return into;
     }
@@ -2955,12 +3039,16 @@ Plugins.rig_skin.createSatScreen = function () {
     // orbit from the download, the stored copy or the set built into this
     // release, so a failed download never loses one.
     var TLE_WAIT = 3600 * 1000, TLE_RETRY = 10 * 60 * 1000, CT_WAIT = 2 * 3600 * 1000;
+    // without usable storage the state lives in memory, so the pace holds
+    var tleMem = null;
     function tleState() {
+        if (tleMem) return tleMem;
         try { return JSON.parse(localStorage.getItem('rig_sat_tles') || 'null') || {}; }
         catch (e) { return {}; }
     }
     function tleSave(st) {
-        try { localStorage.setItem('rig_sat_tles', JSON.stringify(st)); } catch (e) {}
+        try { localStorage.setItem('rig_sat_tles', JSON.stringify(st)); }
+        catch (e) { tleMem = st; }
     }
     function tleNextTry(st) {
         return (st.tried || 0) + (st.fails || st.partial ? TLE_RETRY : TLE_WAIT);
@@ -2978,13 +3066,17 @@ Plugins.rig_skin.createSatScreen = function () {
         // takes up to 10 s, and the map must not wait for that
         if (Object.keys(have).length) cb(have, { pending: true });
 
-        // null when the server does not answer; a busy server can hold the
-        // connection open, hence the hard timeout
+        // null when the server does not answer or refuses; a busy server
+        // can hold the connection open, hence the hard timeout
         function get(url, json) {
             var ctl = new AbortController();
             var timer = setTimeout(function () { ctl.abort(); }, 10000);
             return fetch(url, { signal: ctl.signal, cache: 'no-cache' })
-                .then(function (r) { return r.ok ? (json ? r.json() : r.text()) : (json ? {} : ''); })
+                .then(function (r) {
+                    if (r.ok) return json ? r.json() : r.text();
+                    if (r.status === 404) return json ? {} : '';
+                    throw new Error('refused');
+                })
                 .catch(function () { return null; })
                 .then(function (v) { clearTimeout(timer); return v; });
         }
@@ -3063,19 +3155,21 @@ Plugins.rig_skin.createSatScreen = function () {
         // gets { busy, ok }
         reload: function (cb) {
             if (tleBusy) return cb({ busy: true });
-            ensureLib(function () {
+            ensureLib(function (ok) {
+                if (!ok) return cb({ ok: false });
                 ensureTles(function (tles, how) {
                     if (tles) load(tles);
                     if (!how.pending) cb(how);
                 }, true);
-            });
+            }, true);
         },
         ensure: function (cb) {
             // the orbits are rebuilt at most every 10 minutes; the download
             // itself decides whether it is due. The callback can run twice:
             // with the orbits at hand, then again after a download.
             if (trackRecs && Date.now() - loadedAt < 600000) return cb();
-            ensureLib(function () {
+            ensureLib(function (ok) {
+                if (!ok) return cb();
                 ensureTles(function (tles) {
                     if (tles) load(tles);
                     cb();
@@ -3222,7 +3316,7 @@ Plugins.rig_skin.createSatScreen = function () {
     function refresh() {
         var pos = typeof Utils !== 'undefined' && Utils.getReceiverPos ? Utils.getReceiverPos() : null;
         if (!pos || typeof pos.lat !== 'number') {
-            $head.text('receiver position not configured');
+            $head.text('receiver position not configured'); setTimeout(function () { if ($sat.hasClass('visible')) refresh(); }, 2000);   // EA7CL: la posicion llega despues
             return;
         }
         var st = Plugins.rig_skin._satTrack;
@@ -3474,7 +3568,7 @@ Plugins.rig_skin.createPropScreen = function ($knobLine) {
         // (or hiding the screen) hands the receiver back
         if (!$('body').hasClass('theme-rig') || !$prop.hasClass('visible') ||
             typeof UI === 'undefined' ||
-            Math.abs(UI.getFrequency() - BFREQ[radarBand]) > 3000) {
+            Math.abs(Plugins.rig_skin.tuneTarget() - BFREQ[radarBand]) > 3000) {
             setRadar(-1);
             return;
         }
@@ -3526,8 +3620,15 @@ Plugins.rig_skin.createPropScreen = function ($knobLine) {
         { key: 'muf', label: 'MUF MAP - prop.kc2g.com', url: 'https://prop.kc2g.com/renders/current/mufd-normal-now.svg' }
     ];
 
+    // the screen only shows under the rig theme: no fetches otherwise
+    function shown() {
+        return $prop.hasClass('visible') && $('body').hasClass('theme-rig');
+    }
+    var refreshedAt = 0;
     setInterval(function () {
-        if ($prop.hasClass('visible')) updateBeacons();
+        if (!shown()) return;
+        if (Date.now() - refreshedAt > 600000) refresh();
+        updateBeacons();
     }, 1000);
 
     var $prop = $('<div>').attr('id', 'owrx-rig-prop');
@@ -3575,6 +3676,7 @@ Plugins.rig_skin.createPropScreen = function ($knobLine) {
     var viewIdx = 0;
 
     function refresh() {
+        refreshedAt = Date.now();
         views.forEach(function (v, i) {
             if (v.refresh) {
                 v.refresh();
@@ -3596,7 +3698,8 @@ Plugins.rig_skin.createPropScreen = function ($knobLine) {
     function setOpen(on) {
         $prop.toggleClass('visible', on);
         if (Plugins.rig_skin._propKey) Plugins.rig_skin._propKey.toggleClass('highlighted', on);
-        if (on) refresh();
+        if (on && shown()) refresh();
+        if (!on && radarBand >= 0) setRadar(-1);
         if (typeof LS !== 'undefined') LS.save('rig_prop', on);
     }
 
@@ -3606,9 +3709,6 @@ Plugins.rig_skin.createPropScreen = function ($knobLine) {
 
     setView((typeof LS !== 'undefined' && LS.has('rig_prop_view')) ? LS.loadInt('rig_prop_view') : 0);
     setOpen((typeof LS !== 'undefined' && LS.has('rig_prop')) ? LS.loadBool('rig_prop') : false);
-    setInterval(function () {
-        if ($prop.hasClass('visible')) refresh();
-    }, 600000);
 };
 
 // Layout chip in the panel's top left corner, labeled with the action:
@@ -3804,7 +3904,7 @@ Plugins.rig_skin.createPanelFit = function () {
         }
 
         var natW = panel.offsetWidth, natH = panel.offsetHeight;
-        if (!natW || !natH) return;
+        if (!natW || !natH) { syncTheme(); return; }
 
         // portrait phones: the rig would cover the whole height, so leave
         // a strip of waterfall visible above it instead
@@ -4013,6 +4113,7 @@ Plugins.rig_skin.createPanelDrag = function () {
     function phone() { return document.body.classList.contains('rig-phone'); }
     var start = null;
     grip.addEventListener('pointerdown', function (e) {
+        if (e.button > 0) return;
         e.preventDefault();
         try { grip.setPointerCapture(e.pointerId); } catch (err) {}
         var r = panel.getBoundingClientRect();
@@ -4033,6 +4134,7 @@ Plugins.rig_skin.createPanelDrag = function () {
     // pointerdown's preventDefault suppresses synthesized dblclick, so
     // the snap-back double-tap is detected from the pointerups directly
     var lastTap = 0;
+    grip.addEventListener('pointercancel', function () { start = null; });
     grip.addEventListener('pointerup', function (e) {
         if (!start) return;
         var moved = Math.abs(e.clientX - start.x) + Math.abs(e.clientY - start.y) > 5;
@@ -4328,8 +4430,7 @@ Plugins.rig_skin.createBandScope = function ($freq) {
     canvas.width = W * dpr;
     canvas.height = H * dpr;
     var $bs = $('<div>').attr('id', 'owrx-rig-bscope').append(canvas);
-    var $bar = $('<div>').attr('id', 'owrx-rig-bscope-bar').text('BAND SCOPE');
-    $freq.append($bs).append($bar);
+    $freq.append($bs);
 
     var ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
@@ -4344,12 +4445,6 @@ Plugins.rig_skin.createBandScope = function ($freq) {
 
     function visible() {
         return $bs.hasClass('visible');
-    }
-
-    function setVisible(on) {
-        $bs.toggleClass('visible', on);
-        $bar.toggleClass('visible', !on);
-        if (typeof LS !== 'undefined') LS.save('rig_bscope', on);
     }
 
     function span() {
@@ -4474,9 +4569,6 @@ Plugins.rig_skin.createBandScope = function ($freq) {
         ctx.textAlign = 'center';
         ctx.fillText('-' + k + 'k', W * 0.25, TRACE_H + WF_H + 3);
         ctx.fillText('+' + k + 'k', W * 0.75, TRACE_H + WF_H + 3);
-        ctx.fillStyle = '#5c6670';
-        ctx.textAlign = 'right';
-        ctx.fillText('HIDE', W - 2, TRACE_H + WF_H + 3);
     }
 
     // feed from the waterfall FFT stream; keep the latest line around
@@ -4491,9 +4583,8 @@ Plugins.rig_skin.createBandScope = function ($freq) {
         var x = (e.clientX - r.left) / r.width * W;
         var y = (e.clientY - r.top) / r.height * H;
         if (y > TRACE_H + WF_H) {
-            // axis strip: SPAN cycles, HIDE collapses (finger-sized zones)
+            // axis strip: SPAN cycles (a finger-sized zone)
             if (x < 90) spanIdx = (spanIdx + 1) % SPANS.length;
-            else if (x > W - 56) setVisible(false);
             return;
         }
         // tune to the clicked frequency
@@ -4508,12 +4599,7 @@ Plugins.rig_skin.createBandScope = function ($freq) {
         if (steps && typeof tuneBySteps === 'function') tuneBySteps(steps);
     }, { passive: false });
 
-    $bar.on('click', function () {
-        setVisible(true);
-    });
-
-    setVisible((typeof LS !== 'undefined' && LS.has('rig_bscope'))
-        ? LS.loadBool('rig_bscope') : true);
+    Plugins.rig_skin.scopeFold($bs, 'BAND SCOPE', 'rig_bscope');
 };
 
 // Audio scope inside the LCD: audio spectrum on the left, waveform on
@@ -4822,8 +4908,8 @@ Plugins.rig_skin.createScope = function ($freq) {
         timer = setTimeout(draw, 40);
     }
 
+    // the drawing loop only runs while the scope shows
     function setVisible(on) {
-        $scope.toggleClass('visible', on);
         if (on && !timer) draw();
         if (!on && timer) {
             clearTimeout(timer);
@@ -4857,18 +4943,35 @@ Plugins.rig_skin.createScope = function ($freq) {
         }
     });
 
-    $('#owrx-rig-meter')
-        .css('cursor', 'pointer')
-        .attr('title', 'Toggle audio scope (right-click: bar / needle meter; drag the SQL marker to set the squelch)')
-        .on('click', function () {
-            var on = !$scope.hasClass('visible');
-            setVisible(on);
-            if (typeof LS !== 'undefined') LS.save('rig_scope', on);
-        });
+    Plugins.rig_skin.scopeFold($scope, 'AUDIO SCOPE', 'rig_scope', setVisible);
+};
 
-    // visible by default, click the meter to hide
-    setVisible((typeof LS !== 'undefined' && LS.has('rig_scope'))
-        ? LS.loadBool('rig_scope') : true);
+// A scope folds into a slim bar: the chevron in its corner hides it, a
+// click on the bar brings it back, and the choice is remembered. Shown
+// by default.
+Plugins.rig_skin.scopeFold = function ($scope, label, key, onChange) {
+    function chevron(d) {
+        return '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+            'stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg>';
+    }
+    var name = label.toLowerCase();
+    var $fold = $('<span>').addClass('owrx-rig-scope-fold').attr('title', 'Hide the ' + name)
+        .html(chevron('M2.5 7.5 6 4l3.5 3.5'));
+    var $bar = $('<div>').addClass('owrx-rig-scope-bar').attr('title', 'Show the ' + name)
+        .html(chevron('M2.5 4.5 6 8l3.5-3.5')).append($('<span>').text(label));
+    $scope.append($fold).after($bar);
+    function set(on) {
+        $scope.toggleClass('visible', on);
+        $bar.toggleClass('visible', !on);
+        if (typeof LS !== 'undefined') LS.save(key, on);
+        if (onChange) onChange(on);
+    }
+    $fold.on('click', function (e) {
+        e.stopPropagation();
+        set(false);
+    });
+    $bar.on('click', function () { set(true); });
+    set((typeof LS !== 'undefined' && LS.has(key)) ? LS.loadBool(key) : true);
 };
 
 Plugins.rig_skin.makeKey = function (label, title) {
@@ -4895,7 +4998,7 @@ Plugins.rig_skin.wheelSteps = (function () {
     return function (e) {
         var key = e.currentTarget || e.target || document;
         var acc = accs.get(key) || 0;
-        var d = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 300 : 1);
+        var d = e.deltaY * (e.deltaMode === 1 ? 100 / 3 : e.deltaMode === 2 ? 300 : 1);
         // direction change drops the leftover so the first notch back counts
         if (acc !== 0 && (d > 0) !== (acc > 0)) acc = 0;
         acc += d;
@@ -5023,19 +5126,23 @@ Plugins.rig_skin.frame = function (o) {
     // the host hides on click and on touchend; a touchend that hides the
     // window swallows the click that would follow, so listen to both and
     // let the touch path suppress the click
-    $host.find('.openwebrx-plugin-close').on('click touchend', function (e) {
+    // the host keeps a window for its id: drop what an earlier frame bound
+    var $x = $host.find('.openwebrx-plugin-close').off('.rigframe');
+    $x.on('click.rigframe touchend.rigframe', function (e) {
         if (e.type === 'touchend') e.preventDefault();
         closeFns.forEach(function (fn) { fn(); });
     });
+    var watcher = null;
     if (window.ResizeObserver) {
-        new ResizeObserver(function () {
+        watcher = new ResizeObserver(function () {
             if (queued) return;
             queued = true;
             requestAnimationFrame(function () {
                 queued = false;
                 if ($host.is(':visible')) resizeFns.forEach(function (fn) { fn(); });
             });
-        }).observe(host);
+        });
+        watcher.observe(host);
     }
     return {
         hosted: true, $el: $el,
@@ -5046,7 +5153,14 @@ Plugins.rig_skin.frame = function (o) {
         onClose: function (fn) { closeFns.push(fn); },
         onResize: function (fn) { resizeFns.push(fn); },
         setTitle: function (t) { $host.find('.openwebrx-plugin-header > span').first().text(t); },
-        remove: function () { Plugins.toggleWindow(o.id, false); $el.remove(); }
+        remove: function () {
+            Plugins.toggleWindow(o.id, false);
+            $x.off('.rigframe');
+            if (watcher) watcher.disconnect();
+            closeFns = [];
+            resizeFns = [];
+            $el.remove();
+        }
     };
 };
 
@@ -5609,6 +5723,7 @@ Plugins.rig_skin.createMeter = function ($freq) {
         // Android fires contextmenu on long press; drop the fallback
         // timer so the long press cannot toggle twice
         if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        if (pressed) return;   // the long press already switched the face
         toggleStyle();
     });
 
@@ -5635,18 +5750,20 @@ Plugins.rig_skin.createMeter = function ($freq) {
         });
         $meter.on('pointerup.press pointercancel.press', function () {
             if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+            // no click may follow the release: do not eat a later tap
+            setTimeout(function () { pressed = false; }, 300);
             $meter.off('pointermove.press pointerup.press pointercancel.press');
         });
     });
 
-    // the release after a long press must not toggle the audio scope
-    // (this handler is bound before the scope's, so it can stop it)
-    $meter.on('click', function (e) {
-        if (pressed) {
-            pressed = false;
-            e.stopImmediatePropagation();
-        }
-    });
+    // a click switches the face; the release after a long press already
+    // did, so it must not switch back
+    $meter.css('cursor', 'pointer')
+        .attr('title', 'Click: bar / needle meter; drag the SQL marker to set the squelch')
+        .on('click', function () {
+            if (pressed) { pressed = false; return; }
+            toggleStyle();
+        });
 
     // modern-rig meter colors: blue segments up to S9, red beyond
     function segColor(t) {
@@ -5767,9 +5884,14 @@ Plugins.rig_skin.createMeter = function ($freq) {
                 ? 'ew-resize' : '';
         }
     });
-    canvas.addEventListener('pointerup', function () { sqDrag = false; });
-    canvas.addEventListener('pointercancel', function () { sqDrag = false; });
-    // grabbing the marker must not toggle the audio scope
+    // a drag often ends without a click: do not eat a later tap
+    function sqEnd() {
+        sqDrag = false;
+        setTimeout(function () { sqWas = false; }, 300);
+    }
+    canvas.addEventListener('pointerup', sqEnd);
+    canvas.addEventListener('pointercancel', sqEnd);
+    // grabbing the marker must not switch the meter face
     canvas.addEventListener('click', function (e) {
         if (sqWas) {
             sqWas = false;
@@ -5922,7 +6044,10 @@ Plugins.rig_skin.createMeter = function ($freq) {
         if (typeof Waterfall !== 'undefined' && Waterfall.getRange) {
             var dbText;
             if (calOffset() !== null) {
-                dbText = calDbmFromT(current).toFixed(1) + ' dBm';
+                // off the ends of the scale the needle stops, the number does not
+                var live = calDbm();
+                dbText = (live !== null && (current <= 0 || current >= 1)
+                    ? live : calDbmFromT(current)).toFixed(1) + ' dBm';
             } else {
                 var rng = Waterfall.getRange();
                 dbText = ((rng.min - 20) + current * ((rng.max + 20) - (rng.min - 20))).toFixed(1) + ' dB';
@@ -6173,12 +6298,17 @@ Plugins.rig_skin.createKnob = function ($line) {
         knob.addEventListener(t, function (e) { e.preventDefault(); }, { passive: false });
     });
 
+    // one pointer turns the knob, with the main button only: a right
+    // click or a second finger must not start or steer a drag
+    var dragId = null;
     knob.addEventListener('pointerdown', function (e) {
+        if (e.button > 0 || dragging) return;
         e.preventDefault();
         stopSpin();
         if (Plugins.rig_skin.dialLocked) return;
         try { knob.setPointerCapture(e.pointerId); } catch (err) {}
         dragging = true;
+        dragId = e.pointerId;
         knob.classList.add('grabbing');
         lastAngle = pointerAngle(e);
         lastTime = e.timeStamp;
@@ -6186,7 +6316,7 @@ Plugins.rig_skin.createKnob = function ($line) {
     });
 
     knob.addEventListener('pointermove', function (e) {
-        if (!dragging) return;
+        if (!dragging || e.pointerId !== dragId) return;
         var a = pointerAngle(e);
         var delta = a - lastAngle;
         if (delta > 180) delta -= 360;
@@ -6199,7 +6329,7 @@ Plugins.rig_skin.createKnob = function ($line) {
     });
 
     knob.addEventListener('pointerup', function (e) {
-        if (!dragging) return;
+        if (!dragging || e.pointerId !== dragId) return;
         dragging = false;
         knob.classList.remove('grabbing');
         // ignore stale velocity if the pointer paused before release

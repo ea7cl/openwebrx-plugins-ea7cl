@@ -19,3 +19,9 @@ echo "Avisos SAT:     $(grep -c 'cargando órbitas' $F)"
 echo "Aviso version:  $(grep -c 'clic para recargar' $F)"
 echo "Version: $(grep -o "^Plugins.rig_skin._version = '[^']*'" $F)"
 bash /home/ea7cl/parches_rig_skin.sh
+# EA7CL 24-11-2026: el actualizador oficial que se baja arriba no vuelve a poner
+# los enganches de doppler_autostart en rig_skin.js; se ponen aqui
+if [ -x $P/doppler_autostart/reapply.sh ]; then
+  $P/doppler_autostart/reapply.sh
+fi
+echo "Enganches Doppler: $(grep -c DOPPLER_AUTOSTART_HOOK_BEGIN $F) (tienen que ser 3)"

@@ -1,7 +1,6 @@
 # rig_dx_spotter — mejoras del DX CLUSTER (EA7CL)
 
-Plugin de receptor para OpenWebRX+, versión **0.61**. Copiado del servidor `openwebrx` el 3-nov-2026,
-idéntico al que está funcionando (comprobado con SHA-256).
+Plugin de receptor para OpenWebRX+, versión **0.62** (24-nov-2026), la misma que funciona en el servidor.
 
 ## Qué hace
 

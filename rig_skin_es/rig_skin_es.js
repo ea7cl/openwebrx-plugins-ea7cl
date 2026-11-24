@@ -1,6 +1,9 @@
 /*
  * rig_skin_es - plugin local de EA7CL para OpenWebRX+
  *
+ * rig_skin es obra de George Anestopoulos (aganet en GitHub; firma
+ * SV1DOD / HB9ISH): https://github.com/aganet/openwebrxplus-rig-skin
+ *
  * Traduce al espanol los textos y las ayudas emergentes del plugin rig_skin
  * mientras se muestran en pantalla. No modifica rig_skin, asi que sus
  * actualizaciones no borran la traduccion; un texto nuevo de una version
@@ -11,7 +14,7 @@
  * graficos (canvas) no se pueden traducir desde aqui.
  */
 Plugins.rig_skin_es = Plugins.rig_skin_es || {};
-Plugins.rig_skin_es._version = 0.1;
+Plugins.rig_skin_es._version = 0.2;
 Plugins.rig_skin_es.no_css = true;
 
 Plugins.rig_skin_es.AMBITO = '[id^="owrx-rig"],[class*="owrx-rig"],[id^="plugin-window-rig-"],[id^="plugin-button-rig-"]';
@@ -78,6 +81,13 @@ Plugins.rig_skin_es.TEXTOS = {
 	'Page waterfall up (right-click: move the receiver window)': 'Desplazar la cascada hacia arriba en frecuencia (clic derecho: mover la ventana del receptor)',
 	'Click the ms/Div label to change the scope timebase': 'Pulsa la etiqueta ms/Div para cambiar la base de tiempos del osciloscopio',
 	'Toggle audio scope (right-click: bar / needle meter; drag the SQL marker to set the squelch)': 'Mostrar u ocultar el osciloscopio de audio (clic derecho: medidor de barra o de aguja; arrastra la marca SQL para ajustar el silenciador)',
+	// 0.2 (rig_skin 0.10.23): flechas para plegar los visores y nueva ayuda del S-meter
+	'AUDIO SCOPE': 'OSCILOSCOPIO DE AUDIO',
+	'Hide the band scope': 'Ocultar el visor de banda',
+	'Show the band scope': 'Mostrar el visor de banda',
+	'Hide the audio scope': 'Ocultar el osciloscopio de audio',
+	'Show the audio scope': 'Mostrar el osciloscopio de audio',
+	'Click: bar / needle meter; drag the SQL marker to set the squelch': 'Clic: medidor de barra o de aguja; arrastra la marca SQL para ajustar el silenciador',
 	'Noise reduction on/off': 'Reducción de ruido: activar o desactivar',
 	'Lock the dial': 'Bloquear el dial',
 	'Tuning step': 'Paso de sintonía',

@@ -10,7 +10,7 @@
  * La fuente solo se usa para las banderas; el resto del texto no cambia.
  */
 Plugins.banderas_emoji = Plugins.banderas_emoji || {};
-Plugins.banderas_emoji._version = 0.1;
+Plugins.banderas_emoji._version = 0.2;
 Plugins.banderas_emoji.no_css = true;
 
 Plugins.banderas_emoji.FUENTE = 'Twemoji Country Flags';
@@ -65,6 +65,15 @@ Plugins.banderas_emoji._fuente = function (el) {
 	el.setAttribute('data-ea7-bandera', '1');
 };
 
+// 0.2: rig_skin 0.10.22 o posterior (de George Anestopoulos, aganet) mira si
+// el navegador pinta banderas y, si no, pone letras (ES, IT) en el DX cluster.
+// Con la fuente de este plugin si se pintan: se le avisa para que siga
+// poniendo la bandera. Solo si rig_skin ya esta cargado (crearlo antes lo
+// estropearia: el cargador pensaria que ya esta y no lo cargaria).
+Plugins.banderas_emoji._avisarRig = function () {
+	if (window.Plugins && Plugins.rig_skin && Plugins.rig_skin._version) Plugins.rig_skin._flags = true;
+};
+
 Plugins.banderas_emoji.init = function () {
 	var self = this;
 	// navegadores que ya pintan las banderas (Firefox, Mac, moviles): no se hace nada
@@ -74,11 +83,15 @@ Plugins.banderas_emoji.init = function () {
 	st.id = 'banderas-emoji-fuente';
 	st.textContent = '@font-face{font-family:"' + this.FUENTE + '";' +
 		'unicode-range:U+1F1E6-1F1FF,U+1F3F4,U+E0062-E0063,U+E0065,U+E0067,U+E006C,U+E006E,U+E0073-E0074,U+E0077,U+E007F;' +
-		'src:url("' + this.URL + '") format("woff2");font-display:swap}';
+		'src:url("' + this.URL + '") format("woff2");font-display:swap}' +
+		// 0.2: la lista del DX cluster de rig_skin se rehace cada poco y el repaso
+		// de cada 2 s no llega a ponerle la fuente: regla fija para su columna
+		'\n.owrx-rig-dx-spot td.call{font-family:"' + this.FUENTE + '",Consolas,"Cascadia Mono","DejaVu Sans Mono",Menlo,monospace!important}';
 	document.head.appendChild(st);
 
+	this._avisarRig();
 	this._aplicar();
 	// los perfiles, ventanas y listas se crean o cambian despues: se repasa cada 2 s
-	setInterval(function () { self._aplicar(); }, 2000);
+	setInterval(function () { self._avisarRig(); self._aplicar(); }, 2000);
 	return true;
 };

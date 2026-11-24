@@ -17,9 +17,15 @@
  * de que continente es cada anunciante. No modifica rig_skin: sus
  * actualizaciones no borran este plugin. El mapa sigue los botones propios
  * de rig_skin (banda/HF/ALL); estos filtros afectan a la lista.
+ * rig_skin es obra de George Anestopoulos (aganet en GitHub, SV1DOD / HB9ISH).
+ *
+ * 0.62: los spots del historial de DXSummit no traen numero DXCC y salian sin
+ * bandera: ahora se saca del nombre del pais. Se quitan los spots basura
+ * (indicativo o anunciante que no lo es, p. ej. "FT8" de "FT4-@") y del
+ * anunciante se quita el "-@" (solo dice que se puso desde la web de DXSummit).
  */
 Plugins.rig_dx_spotter = Plugins.rig_dx_spotter || {};
-Plugins.rig_dx_spotter._version = 0.61;
+Plugins.rig_dx_spotter._version = 0.62;
 Plugins.rig_dx_spotter.no_css = true;
 
 Plugins.rig_dx_spotter.MAX_FILAS = 40;
@@ -131,7 +137,98 @@ Plugins.rig_dx_spotter._esEU = function (call) {
 Plugins.rig_dx_spotter._listaRig = function () {
 	var f = Plugins.rig_skin && Plugins.rig_skin._dxSpots;
 	if (typeof f !== 'function') return [];
-	try { return f() || []; } catch (e) { return []; }
+	var self = this;
+	try { return (f() || []).filter(function (s) { return !self._basura(s); }); } catch (e) { return []; }
+};
+
+// 0.62: un indicativo es prefijo + cifra + sufijo que acaba en letra (EA7CL,
+// 9A4ZM, 3DA0RU, EA7CL/P); "FT8", "FT4-@" o "DX-@" no lo son
+Plugins.rig_dx_spotter._esIndicativo = function (c) {
+	var partes = String(c || '').toUpperCase().split('-')[0].split('/');
+	return partes.some(function (p) { return /^[A-Z0-9]{1,3}[0-9][A-Z0-9]*[A-Z]$/.test(p); });
+};
+// anunciante: se admiten tambien oyentes (SWL33); fuera los nombres de modo
+// ("FT4-@") y lo que no lleva ninguna cifra ("DX-@", "DXER-@")
+Plugins.rig_dx_spotter._esAnunciante = function (c) {
+	var b = String(c || '').toUpperCase().split('-')[0].trim();
+	if (/^(FT[0-9]|JT[0-9]+|Q65|MSK[0-9]*|PSK[0-9]*|CW|SSB|RTTY|FM|AM)$/.test(b)) return false;
+	return /[0-9]/.test(b);
+};
+Plugins.rig_dx_spotter._basura = function (s) {
+	if (!s || !this._esIndicativo(s.call)) return true;
+	return !!s.spotter && !this._esAnunciante(s.spotter);
+};
+
+// 0.62: bandera por el nombre del pais (DXSummit, nombres de cty.dat) cuando
+// el spot no trae numero DXCC. Codigo ISO de dos letras -> bandera.
+Plugins.rig_dx_spotter.PAISES = {
+	'Spain': 'ES', 'Balearic Islands': 'ES', 'Canary Islands': 'ES', 'Ceuta & Melilla': 'ES', 'Ceuta and Melilla': 'ES',
+	'Portugal': 'PT', 'Madeira Islands': 'PT', 'Azores': 'PT', 'France': 'FR', 'Corsica': 'FR',
+	'Andorra': 'AD', 'Monaco': 'MC', 'Italy': 'IT', 'Sardinia': 'IT', 'Sicily': 'IT', 'San Marino': 'SM',
+	'Vatican City': 'VA', 'Malta': 'MT', 'Gibraltar': 'GI', 'Fed. Rep. of Germany': 'DE', 'Germany': 'DE',
+	'Austria': 'AT', 'Switzerland': 'CH', 'Liechtenstein': 'LI', 'Belgium': 'BE', 'Netherlands': 'NL',
+	'Luxembourg': 'LU', 'England': 'GB', 'Scotland': 'GB', 'Wales': 'GB', 'Northern Ireland': 'GB',
+	'Shetland Islands': 'GB', 'Isle of Man': 'IM', 'Guernsey': 'GG', 'Jersey': 'JE', 'Ireland': 'IE',
+	'Denmark': 'DK', 'Faroe Islands': 'FO', 'Greenland': 'GL', 'Norway': 'NO', 'Svalbard': 'SJ',
+	'Jan Mayen': 'SJ', 'Sweden': 'SE', 'Finland': 'FI', 'Aland Islands': 'AX', 'Market Reef': 'AX',
+	'Iceland': 'IS', 'Estonia': 'EE', 'Latvia': 'LV', 'Lithuania': 'LT', 'Poland': 'PL',
+	'Czech Republic': 'CZ', 'Slovak Republic': 'SK', 'Hungary': 'HU', 'Slovenia': 'SI', 'Croatia': 'HR',
+	'Bosnia-Herzegovina': 'BA', 'Serbia': 'RS', 'Montenegro': 'ME', 'Kosovo': 'XK', 'North Macedonia': 'MK',
+	'Macedonia': 'MK', 'Albania': 'AL', 'Greece': 'GR', 'Crete': 'GR', 'Dodecanese': 'GR', 'Mount Athos': 'GR',
+	'Bulgaria': 'BG', 'Romania': 'RO', 'Moldova': 'MD', 'Ukraine': 'UA', 'Belarus': 'BY',
+	'European Russia': 'RU', 'Asiatic Russia': 'RU', 'Kaliningrad': 'RU', 'European Turkey': 'TR',
+	'Asiatic Turkey': 'TR', 'Cyprus': 'CY', 'Georgia': 'GE', 'Armenia': 'AM', 'Azerbaijan': 'AZ',
+	'Kazakhstan': 'KZ', 'Uzbekistan': 'UZ', 'Kyrgyzstan': 'KG', 'Tajikistan': 'TJ', 'Turkmenistan': 'TM',
+	'Israel': 'IL', 'Palestine': 'PS', 'Jordan': 'JO', 'Lebanon': 'LB', 'Syria': 'SY', 'Iraq': 'IQ',
+	'Iran': 'IR', 'Kuwait': 'KW', 'Saudi Arabia': 'SA', 'Bahrain': 'BH', 'Qatar': 'QA',
+	'United Arab Emirates': 'AE', 'Oman': 'OM', 'Yemen': 'YE', 'Afghanistan': 'AF', 'Pakistan': 'PK',
+	'India': 'IN', 'Sri Lanka': 'LK', 'Maldives': 'MV', 'Nepal': 'NP', 'Bhutan': 'BT', 'Bangladesh': 'BD',
+	'Myanmar': 'MM', 'Thailand': 'TH', 'Laos': 'LA', 'Cambodia': 'KH', 'Vietnam': 'VN',
+	'West Malaysia': 'MY', 'East Malaysia': 'MY', 'Singapore': 'SG', 'Indonesia': 'ID', 'Brunei Darussalam': 'BN',
+	'Philippines': 'PH', 'Timor - Leste': 'TL', 'Timor-Leste': 'TL', 'China': 'CN', 'Hong Kong': 'HK',
+	'Macao': 'MO', 'Taiwan': 'TW', 'Mongolia': 'MN', 'Japan': 'JP', 'Ogasawara': 'JP', 'Minami Torishima': 'JP',
+	'Republic of Korea': 'KR', 'DPR of Korea': 'KP', 'United States': 'US', 'Alaska': 'US', 'Hawaii': 'US',
+	'Canada': 'CA', 'Mexico': 'MX', 'Guatemala': 'GT', 'Belize': 'BZ', 'El Salvador': 'SV', 'Honduras': 'HN',
+	'Nicaragua': 'NI', 'Costa Rica': 'CR', 'Panama': 'PA', 'Cuba': 'CU', 'Bahamas': 'BS', 'Jamaica': 'JM',
+	'Haiti': 'HT', 'Dominican Republic': 'DO', 'Puerto Rico': 'PR', 'US Virgin Islands': 'VI',
+	'British Virgin Islands': 'VG', 'Anguilla': 'AI', 'St. Kitts & Nevis': 'KN', 'Antigua & Barbuda': 'AG',
+	'Montserrat': 'MS', 'Guadeloupe': 'GP', 'Dominica': 'DM', 'Martinique': 'MQ', 'St. Lucia': 'LC',
+	'St. Vincent': 'VC', 'Barbados': 'BB', 'Grenada': 'GD', 'Trinidad & Tobago': 'TT', 'Aruba': 'AW',
+	'Curacao': 'CW', 'Bonaire': 'BQ', 'Sint Maarten': 'SX', 'St. Martin': 'MF', 'Saint Martin': 'MF',
+	'St. Barthelemy': 'BL', 'Cayman Islands': 'KY', 'Turks & Caicos Islands': 'TC', 'Bermuda': 'BM',
+	'St. Pierre & Miquelon': 'PM', 'Colombia': 'CO', 'Venezuela': 'VE', 'Guyana': 'GY', 'Suriname': 'SR',
+	'French Guiana': 'GF', 'Ecuador': 'EC', 'Galapagos Islands': 'EC', 'Peru': 'PE', 'Bolivia': 'BO',
+	'Brazil': 'BR', 'Fernando de Noronha': 'BR', 'Paraguay': 'PY', 'Uruguay': 'UY', 'Argentina': 'AR',
+	'Chile': 'CL', 'Easter Island': 'CL', 'Juan Fernandez Islands': 'CL', 'Falkland Islands': 'FK',
+	'Morocco': 'MA', 'Western Sahara': 'EH', 'Algeria': 'DZ', 'Tunisia': 'TN', 'Libya': 'LY', 'Egypt': 'EG',
+	'Sudan': 'SD', 'South Sudan': 'SS', 'Ethiopia': 'ET', 'Eritrea': 'ER', 'Djibouti': 'DJ', 'Somalia': 'SO',
+	'Kenya': 'KE', 'Uganda': 'UG', 'Tanzania': 'TZ', 'Rwanda': 'RW', 'Burundi': 'BI', 'Senegal': 'SN',
+	'The Gambia': 'GM', 'Guinea-Bissau': 'GW', 'Guinea': 'GN', 'Sierra Leone': 'SL', 'Liberia': 'LR',
+	"Cote d'Ivoire": 'CI', 'Mali': 'ML', 'Burkina Faso': 'BF', 'Ghana': 'GH', 'Togo': 'TG', 'Benin': 'BJ',
+	'Niger': 'NE', 'Nigeria': 'NG', 'Chad': 'TD', 'Cameroon': 'CM', 'Central African Republic': 'CF',
+	'Equatorial Guinea': 'GQ', 'Gabon': 'GA', 'Republic of the Congo': 'CG', 'Dem. Rep. of the Congo': 'CD',
+	'Angola': 'AO', 'Zambia': 'ZM', 'Malawi': 'MW', 'Mozambique': 'MZ', 'Zimbabwe': 'ZW', 'Botswana': 'BW',
+	'Namibia': 'NA', 'South Africa': 'ZA', 'Lesotho': 'LS', 'Kingdom of Eswatini': 'SZ', 'Madagascar': 'MG',
+	'Mauritius': 'MU', 'Reunion Island': 'RE', 'Mayotte': 'YT', 'Comoros': 'KM', 'Seychelles': 'SC',
+	'Cape Verde': 'CV', 'Cabo Verde': 'CV', 'Sao Tome & Principe': 'ST', 'Mauritania': 'MR', 'St. Helena': 'SH',
+	'Ascension Island': 'SH', 'Tristan da Cunha & Gough Islands': 'SH', 'Australia': 'AU',
+	'Christmas Island': 'CX', 'Cocos (Keeling) Islands': 'CC', 'Norfolk Island': 'NF', 'Lord Howe Island': 'AU',
+	'New Zealand': 'NZ', 'Chatham Islands': 'NZ', 'Papua New Guinea': 'PG', 'Solomon Islands': 'SB',
+	'Vanuatu': 'VU', 'New Caledonia': 'NC', 'Fiji': 'FJ', 'Tonga': 'TO', 'Samoa': 'WS', 'American Samoa': 'AS',
+	'Kiribati': 'KI', 'Tuvalu': 'TV', 'Nauru': 'NR', 'Marshall Islands': 'MH', 'Micronesia': 'FM',
+	'Palau': 'PW', 'Guam': 'GU', 'Mariana Islands': 'MP', 'French Polynesia': 'PF', 'Wallis & Futuna Islands': 'WF',
+	'Cook Islands': 'CK', 'Niue': 'NU', 'Tokelau Islands': 'TK', 'Pitcairn Island': 'PN', 'Antarctica': 'AQ'
+};
+Plugins.rig_dx_spotter._bandera = function (s, tabla) {
+	if (s.dxcc && tabla[s.dxcc]) return tabla[s.dxcc] + ' ';
+	var iso = this.PAISES[s.cont];
+	if (!iso) return '';
+	return String.fromCodePoint(0x1F1E6 + iso.charCodeAt(0) - 65, 0x1F1E6 + iso.charCodeAt(1) - 65) + ' ';
+};
+
+// 0.62: el "-@" del final solo indica que el spot se puso desde la web de DXSummit
+Plugins.rig_dx_spotter._anunciante = function (c) {
+	return String(c || '').replace(/-@$/, '');
 };
 
 Plugins.rig_dx_spotter._filtrar = function (lista) {
@@ -182,7 +279,7 @@ Plugins.rig_dx_spotter._pintar = function () {
 		return;
 	}
 	lista.slice(0, this.MAX_FILAS).forEach(function (s) {
-		var bandera = s.dxcc && banderas[s.dxcc] ? banderas[s.dxcc] + ' ' : '';
+		var bandera = self._bandera(s, banderas);
 		var contAnun = self._cont[String(s.spotter || '').toUpperCase()] || '';
 		var md = self._modoSpot(s);
 		var $tr = $('<tr>').addClass('owrx-rig-dx-spot')
@@ -197,7 +294,7 @@ Plugins.rig_dx_spotter._pintar = function () {
 			});
 		$tr.append($('<td>').addClass('age').text(self._edad(s.time)));
 		$tr.append($('<td>').addClass('call').text(bandera + s.call));
-		$tr.append($('<td>').addClass('spotter').text(s.spotter || ''));
+		$tr.append($('<td>').addClass('spotter').text(self._anunciante(s.spotter)));
 		$tr.append($('<td>').addClass('freq').text((s.freq / 1000000).toFixed(4)));
 		$tr.append($('<td>').addClass('mode').addClass(self._claseModo(md.m))
 			.toggleClass('est', md.est).text(md.m === 'DIGI' ? 'DIG' : md.m));

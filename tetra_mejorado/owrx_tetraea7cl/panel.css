@@ -1,0 +1,18 @@
+/* tetra-mejorado (EA7CL) */
+.tetra-ea7cl { flex: 1 0 0; font-size: 12px; line-height: 1.25em; }
+.tetra-ea7cl .openwebrx-tetra-display { width: 100%; }
+.tetra-ea7cl .openwebrx-tetra-display td { vertical-align: top; padding: 0 2px; }
+.tetra-ea7cl-n { text-align: right; white-space: nowrap; opacity: 0.75; }
+.tetra-ea7cl-gris { opacity: 0.6; }
+.tetra-ea7cl-cifrado { color: #e0701a; font-weight: bold; }
+.tetra-ea7cl-ts { display: flex; gap: 4px; margin-bottom: 4px; }
+.tetra-ea7cl-ts span {
+    flex: 1; text-align: center; border-radius: 3px; padding: 1px 0;
+    background: rgba(128, 128, 128, 0.25); border: 1px solid rgba(128, 128, 128, 0.5);
+    font-weight: bold;
+}
+.tetra-ea7cl-ts span.voz { background: #2e9e44; color: #fff; }
+.openwebrx-meta-slot.tetra-ea7cl-sin .tetra-ea7cl { opacity: 0.45; }
+#openwebrx-panel-metadata-tetra { width: 235px; height: auto; min-height: 200px; }
+#openwebrx-panel-metadata-tetra .openwebrx-meta-slot { width: auto; height: auto; min-height: 196px; }
+.tetra-ea7cl .openwebrx-tetra-display td + td { white-space: nowrap; }

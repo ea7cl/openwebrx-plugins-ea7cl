@@ -36,6 +36,7 @@ Desarrollos para el receptor OpenWebRX+ de EA7CL (Málaga). Cada desarrollo va e
 | [`am_calidad/`](am_calidad/) | AM con mejor sonido: AGC por portadora sin golpe al abrir el squelch, paso alto de 250 Hz y paso bajo según la banda (3,5 kHz en Airband), limitador blando. La SAM no se toca. Se vuelve a poner sola tras actualizar con apt. | ver [CHANGELOG](am_calidad/CHANGELOG.md) |
 | [`arreglo_modo_digital/`](arreglo_modo_digital/) | Evita el error «unsupported demodulator» al abrir un perfil cuya modulación inicial es digital (FT8, ADS-B, AIS…). | ver [CHANGELOG](arreglo_modo_digital/CHANGELOG.md) |
 | [`reaplicar_ea7cl/`](reaplicar_ea7cl/) | Guarda los cambios propios en archivos del paquete OpenWebRX+ (traducciones, estilos, index.html, cabecera…) y los vuelve a poner solo tras cada `apt`. Trae los 18 cambios de la 1.2.130. | ver [CHANGELOG](reaplicar_ea7cl/CHANGELOG.md) |
+| [`tetra_mejorado/`](tetra_mejorado/) | Modo TETRA: panel con TS1-TS4 (antes salía el tipo de trama y nunca TS0), datos de la red siempre, cifrado, GSSI/SSI reales y última voz. Necesita `tetrarx` (`dxlaprs-tetra`). Se vuelve a poner solo tras actualizar con apt. | ver [CHANGELOG](tetra_mejorado/CHANGELOG.md) |
 
 Cada carpeta tiene su **instalador**, su **explicación** (README) y su **desinstalador**. Los desinstaladores
 no borran nada: guardan `init.js` y el plugin en `/home/ea7cl/desinstalado-<plugin>-FECHA` y al terminar

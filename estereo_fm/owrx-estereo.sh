@@ -1,5 +1,5 @@
 #!/bin/bash
-# owrx-estereo (EA7CL) · FM comercial y DAB en ESTÉREO REAL para OpenWebRX+.
+# owrx-estereo (EA7CL) · FM comercial, DAB y DRM en ESTÉREO REAL para OpenWebRX+.
 #
 #   sudo bash owrx-estereo.sh aplicar     pone el estéreo (copia de seguridad de cada archivo
 #                                         que toca; si ya estaba puesto, no hace nada)
@@ -14,7 +14,7 @@
 #   · añade el paquete Python  <dist-packages>/owrx_estereo/
 #   · añade el complemento     <dist-packages>/htdocs/plugins/receiver/estereo_fm/
 #   · añade unas líneas de enganche (entre marcas "owrx-estereo") al final de
-#     csdr/chain/analog.py y csdr/chain/dablin.py, y dentro de owrx/dsp.py
+#     csdr/chain/analog.py, csdr/chain/dablin.py y csdr/chain/drm.py, y dentro de owrx/dsp.py
 #   · añade  Plugins.load('estereo_fm')  al final de htdocs/plugins/receiver/init.js
 # Copias de seguridad: /var/backups/owrx-estereo/<versión de OpenWebRX>/
 set -e
@@ -39,7 +39,7 @@ VER="$(dpkg-query -W -f='${Version}' openwebrx 2>/dev/null || echo desconocida)"
 COPIAS="/var/backups/owrx-estereo/$VER"
 INIT="$D/htdocs/plugins/receiver/init.js"
 # 1.2.130 o posterior ya trae estéreo propio (HdStereo y el modo BCFM para la FM): entonces solo se
-# engancha el DAB (dablin.py); la FM es la BCFM de OpenWebRX. En la 1.2.128: FM, DAB y dsp.py.
+# enganchan el DAB (dablin.py) y el DRM (drm.py); la FM es la BCFM de OpenWebRX. En la 1.2.128: FM, DAB y dsp.py.
 MODO=antiguo
 grep -q "class HdStereo" "$D/csdr/chain/demodulator.py" 2>/dev/null && MODO=nativo
 
@@ -52,11 +52,14 @@ JS = "Plugins.load('estereo_fm');   // EA7CL: FM y DAB en estéreo (owrx-estereo
 archivos = {
     "csdr/chain/analog.py": ("fin", "try:\n    import owrx_estereo.enganche as _oe\n    _oe.aplicar_analog(globals())\nexcept Exception as _e:\n    import logging as _l\n    _l.getLogger('owrx_estereo').warning('FM estéreo desactivado: %s', _e)\n"),
     "csdr/chain/dablin.py": ("fin", "try:\n    import owrx_estereo.enganche as _oe\n    _oe.aplicar_dablin(globals())\nexcept Exception as _e:\n    import logging as _l\n    _l.getLogger('owrx_estereo').warning('DAB estéreo desactivado: %s', _e)\n"),
+    "csdr/chain/drm.py": ("fin", "try:\n    import owrx_estereo.enganche as _oe\n    _oe.aplicar_drm(globals())\nexcept Exception as _e:\n    import logging as _l\n    _l.getLogger('owrx_estereo').warning('DRM estéreo desactivado: %s', _e)\n"),
     "owrx/dsp.py": ("antes:            # recreate secondary demodulator, if present\n",
                     "            try:\n                import owrx_estereo.enganche as _oe\n                _oe.avisar(self, demodulator)\n            except Exception:\n                logger.exception('owrx-estereo')\n"),
 }
-if modo == "nativo":            # solo el DAB; la FM estéreo es la BCFM de OpenWebRX
-    archivos = {k: v for k, v in archivos.items() if k == "csdr/chain/dablin.py"}
+if modo == "nativo":            # solo DAB y DRM; la FM estéreo es la BCFM de OpenWebRX
+    archivos = {k: v for k, v in archivos.items() if k in ("csdr/chain/dablin.py", "csdr/chain/drm.py")}
+else:                           # el DRM estéreo solo existe en el modo nativo
+    archivos.pop("csdr/chain/drm.py")
 def bloque(texto, sangria=""):
     return sangria + INI + "\n" + texto + sangria + FIN + "\n"
 estado = []
@@ -118,22 +121,24 @@ case "$ACCION" in
     YA=0
     [ -d "$D/owrx_estereo" ] && grep -q "owrx-estereo (EA7CL)" "$D/csdr/chain/dablin.py" \
       && grep -q "estereo_fm" "$INIT" 2>/dev/null && YA=1
+    if [ "$MODO" = nativo ] && [ -f "$D/csdr/chain/drm.py" ]; then
+      grep -q "owrx-estereo (EA7CL)" "$D/csdr/chain/drm.py" || YA=0
+    fi
     if [ "$MODO" = antiguo ]; then
       grep -q "owrx-estereo (EA7CL)" "$D/csdr/chain/analog.py" && grep -q "owrx-estereo (EA7CL)" "$D/owrx/dsp.py" || YA=0
     fi
     # copia de seguridad de los originales (una vez por versión de OpenWebRX, antes de tocarlos)
-    if [ ! -d "$COPIAS" ]; then
-      mkdir -p "$COPIAS"
-      for f in csdr/chain/analog.py csdr/chain/dablin.py owrx/dsp.py htdocs/plugins/receiver/init.js; do
-        [ -f "$D/$f" ] && ! grep -q "owrx-estereo" "$D/$f" && install -D -m 644 "$D/$f" "$COPIAS/$f"
-      done
-      say "Copia de seguridad en $COPIAS"
-    fi
+    # (archivo a archivo: si una versión nueva del script toca un archivo más, también se copia)
+    for f in csdr/chain/analog.py csdr/chain/dablin.py csdr/chain/drm.py owrx/dsp.py htdocs/plugins/receiver/init.js; do
+      if [ -f "$D/$f" ] && [ ! -f "$COPIAS/$f" ] && ! grep -q "owrx-estereo" "$D/$f"; then
+        install -D -m 644 "$D/$f" "$COPIAS/$f" && say "Copia de seguridad: $COPIAS/$f"
+      fi
+    done
     rm -rf "$D/owrx_estereo"; cp -r "$ORIGEN/owrx_estereo" "$D/owrx_estereo"
     rm -rf "$D/htdocs/plugins/receiver/estereo_fm"; cp -r "$ORIGEN/plugin/estereo_fm" "$D/htdocs/plugins/receiver/estereo_fm"
     find "$D/owrx_estereo" "$D/htdocs/plugins/receiver/estereo_fm" -type f -exec chmod 644 {} +
     parches aplicar
-    python3 -m py_compile "$D/csdr/chain/analog.py" "$D/csdr/chain/dablin.py" "$D/owrx/dsp.py" "$D"/owrx_estereo/*.py
+    python3 -m py_compile "$D/csdr/chain/analog.py" "$D/csdr/chain/dablin.py" "$D/csdr/chain/drm.py" "$D/owrx/dsp.py" "$D"/owrx_estereo/*.py
     # instalar el propio script y el reaplicado automático tras actualizaciones
     if [ "$ORIGEN" != /usr/local/share/owrx-estereo ]; then
       rm -rf /usr/local/share/owrx-estereo; mkdir -p /usr/local/share/owrx-estereo
@@ -152,14 +157,14 @@ case "$ACCION" in
     parches deshacer
     rm -rf "$D/owrx_estereo" "$D/htdocs/plugins/receiver/estereo_fm"
     rm -f /etc/apt/apt.conf.d/99owrx-estereo
-    python3 -m py_compile "$D/csdr/chain/analog.py" "$D/csdr/chain/dablin.py" "$D/owrx/dsp.py"
+    python3 -m py_compile "$D/csdr/chain/analog.py" "$D/csdr/chain/dablin.py" "$D/csdr/chain/drm.py" "$D/owrx/dsp.py"
     say "Estéreo quitado. OpenWebRX queda como estaba (copias en /var/backups/owrx-estereo)."
     say "El script sigue en /usr/local/sbin/owrx-estereo por si quieres volver a ponerlo."
     reiniciar
     ;;
   estado)
     echo "OpenWebRX $VER en $D"
-    [ "$MODO" = nativo ] && echo "modo: nativo (FM estéreo = modo BCFM de OpenWebRX; se engancha el DAB)" \
+    [ "$MODO" = nativo ] && echo "modo: nativo (FM estéreo = modo BCFM de OpenWebRX; se enganchan DAB y DRM)" \
       || echo "modo: antiguo (FM, DAB y dsp.py)"
     echo " $PROBADAS " | grep -q " $VER " && echo "versión probada: sí" || echo "versión probada: NO (probado en $PROBADAS; no se aplicaría)"
     [ -d "$D/owrx_estereo" ] && echo "paquete owrx_estereo: instalado" || echo "paquete owrx_estereo: no"

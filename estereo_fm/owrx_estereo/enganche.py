@@ -39,6 +39,17 @@ def aplicar_dablin(g):
     g["Dablin"] = clase_dablin(g["Dablin"])
 
 
+def aplicar_drm(g):
+    """Al final de csdr/chain/drm.py: Drm en estéreo (solo 1.2.130 o posterior)."""
+    hd_estereo = nativo()
+    if hd_estereo is None:
+        logger.info("owrx-estereo: DRM estéreo solo en OpenWebRX+ 1.2.130 o posterior")
+        return
+    from .drm_nativo import clase_drm_nativa, arreglar_deteccion_dream
+    arreglar_deteccion_dream()
+    g["Drm"] = clase_drm_nativa(g["Drm"], hd_estereo)
+
+
 def avisar(dsp, demodulator):
     """En DspManager.setDemodulator (owrx/dsp.py): conecta la salida estéreo del modo (FM, DAB)
     con la página del oyente y le dice cuántos canales van.

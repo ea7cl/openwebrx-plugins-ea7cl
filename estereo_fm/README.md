@@ -1,9 +1,10 @@
-# owrx-estereo (EA7CL) · FM comercial y DAB+ en estéreo real para OpenWebRX+
+# owrx-estereo (EA7CL) · FM comercial, DAB+ y DRM en estéreo real para OpenWebRX+
 
 Probado en OpenWebRX+ **1.2.128** y **1.2.130** (Raspberry Pi 5 con Debian 12; Ubuntu 22.04).
 
 Instalar: `sudo bash estereo_fm-install.sh` · Quitar: `sudo bash estereo_fm-uninstall.sh` · Estado: `bash owrx-estereo.sh estado`.
 Cambios: [CHANGELOG.md](CHANGELOG.md).
+
 
 ## Dos modos, según la versión de OpenWebRX+ (el script lo elige solo)
 
@@ -11,7 +12,8 @@ Cambios: [CHANGELOG.md](CHANGELOG.md).
 |---|---|---|
 | FM estéreo | decodificador propio, en el modo **WFM** | el modo **BCFM** que ya trae OpenWebRX |
 | DAB+ estéreo | separador propio + mensaje propio (tipo 5) | `dablin.py` deja de mezclar a mono y usa el estéreo de OpenWebRX |
-| Archivos de OpenWebRX tocados | `analog.py`, `dablin.py`, `dsp.py`, `init.js` | solo `dablin.py` e `init.js` |
+| DRM estéreo (2.1) | — (no disponible) | `drm.py` deja de mezclar a mono el estéreo de Dream y lo declara bien |
+| Archivos de OpenWebRX tocados | `analog.py`, `dablin.py`, `dsp.py`, `init.js` | `dablin.py`, `drm.py` e `init.js` |
 | Página | reproduce el estéreo ella misma | reproduce OpenWebRX; el complemento solo pone botón y medidores |
 
 **En el modo nativo, para oír la FM en estéreo** hay que usar el modo **BCFM** (en el panel de
@@ -159,6 +161,9 @@ ejecuta dentro de él, si se publica conviene usar también la AGPL-3.0.
 
 ## Historial
 
+- **2.2** · Caja L/R siempre visible en BCFM, DAB y DRM («SIN AUDIO» si no llega audio). Arreglo
+  de la detección de Dream 2.2 de OpenWebRX (el panel de estado DRM no se coloreaba).
+- **2.1** · DRM estéreo (`drm.py`); arregla también el fallo de la 1.2.131 en DRM.
 - **2.0** · Modo nativo para OpenWebRX+ 1.2.130+: FM con su BCFM, DAB estéreo por su HdStereo,
   botón y medidores L/R encima de su estéreo. Solo toca `dablin.py` e `init.js`.
 - **1.2.1** · Solo se aplica en versiones probadas.
@@ -167,3 +172,29 @@ ejecuta dentro de él, si se publica conviene usar también la AGPL-3.0.
 - **1.1** · Un ADPCM por canal (quita la "fritura"); PCM si la compresión está desactivada;
   botón ESTÉREO/MONO.
 - **1.0** · Primera versión: FM y DAB en estéreo, medidores L/R, reaplicado tras apt.
+
+## DRM en estéreo (versión 2.1, solo modo nativo)
+
+Dream ya decodifica el DRM en estéreo, pero OpenWebRX+ 1.2.130 lo mezclaba a mono (`Downmix` al
+final de `csdr/chain/drm.py`). La 1.2.131 quitó esa mezcla y marcó la cadena como estéreo, pero
+dejó la salida de Dream declarada como **un canal** (`Format.SHORT`): OpenWebRX trata L,R,L,R…
+como si fuera mono y el audio sale mal. `owrx_estereo/drm_nativo.py` lo arregla:
+
+- en la 1.2.130 cambia el `Downmix` por un paso que deja L y R tal cual, como `COMPLEX_SHORT`;
+- en la 1.2.131 (sin `Downmix` pero mal declarado) añade ese mismo paso al final;
+- si una versión futura ya lo declara bien, no toca nada.
+
+En la página, en modo DRM aparecen el botón ESTÉREO/MONO y la barra L/R como en FM y DAB. Muchas
+emisoras DRM emiten en mono: entonces L y R son iguales y el letrero dice MONO.
+
+Prueba sin emisora: `python3 prueba_drm.py` (pone un `dream` falso solo para la prueba, con
+1000 Hz por L y 2500 Hz por R, y comprueba que llegan separados).
+
+### 2.2 · caja siempre visible y estado de Dream
+
+- En BCFM, DAB y DRM la caja L/R se ve siempre. Si no llega audio (sin señal, o el decodificador
+  no ha enganchado), el letrero dice **SIN AUDIO** y las barras están vacías.
+- Arreglo de un fallo de OpenWebRX 1.2.130: al comprobar si Dream es la 2.2, a veces deja de leer
+  su ayuda antes de ver `--status-socket`. Entonces cree que Dream es antiguo, lo guarda 2 horas y
+  el panel DRM (IO/Time/Frame/FAC/SDC/MSC) no se colorea. `drm_nativo.arreglar_deteccion_dream()`
+  cambia esa comprobación por una que lee toda la ayuda.

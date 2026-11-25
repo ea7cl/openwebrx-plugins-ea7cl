@@ -1,4 +1,17 @@
 # estereo_fm (owrx-estereo) · cambios
+## 2.2 · 2026-11-25
+- La caja ESTÉREO/MONO con la barra L/R se ve siempre en BCFM, DAB y DRM; si no llega audio dice
+  **SIN AUDIO** (antes solo aparecía con audio y parecía que faltaba).
+- Arreglo de un fallo de OpenWebRX 1.2.130 al detectar Dream 2.2 (deja de leer su ayuda antes de
+  ver `--status-socket`): el panel de estado DRM (IO/Time/Frame/FAC/SDC/MSC) no se coloreaba.
+- Instalado en la Pi y en el Ubuntu.
+
+## 2.1 · 2026-11-25
+- **DRM en estéreo** (modo nativo, 1.2.130+): `drm.py` deja de mezclar a mono el estéreo de Dream.
+- Arregla también el fallo de la 1.2.131 en DRM (salida de Dream declarada como un canal).
+- Barra L/R y botón ESTÉREO/MONO también en modo DRM. Prueba sin emisora: `prueba_drm.py`.
+- Copia de seguridad archivo a archivo (también de `drm.py` en instalaciones que ya tenían la 2.0).
+
 ## 2.0 · 2026-11-13
 - Modo nativo para OpenWebRX+ 1.2.130 o posterior (el script lo elige solo):
   - FM estéreo con el modo **BCFM** que ya trae OpenWebRX (en WFM sigue en mono).

@@ -1,5 +1,5 @@
 /*
- * estereo_fm (EA7CL) · FM comercial y DAB en ESTÉREO REAL para OpenWebRX+.
+ * estereo_fm (EA7CL) · FM comercial, DAB y DRM en ESTÉREO REAL para OpenWebRX+.
  *
  * El servidor (paquete owrx_estereo) sigue mandando el MONO de siempre por el canal de audio
  * normal (mensaje 4) y, además, el estéreo en un mensaje aparte (tipo 5):
@@ -16,7 +16,7 @@
  * se ponen el botón y los medidores encima del estéreo de OpenWebRX (ver NATIVO más abajo).
  */
 Plugins.estereo_fm = Plugins.estereo_fm || {};
-Plugins.estereo_fm._version = 2.0;
+Plugins.estereo_fm._version = 2.2;
 
 (function () {
     const E = Plugins.estereo_fm;
@@ -313,13 +313,22 @@ Plugins.estereo_fm._version = 2.0;
     }
     function pintar() {
         const modo = (typeof UI !== 'undefined' && UI.getModulation) ? UI.getModulation() : '';
+        const vivo = Date.now() - E.ultimo < 1500;
+        // en los modos que pueden ir en estéreo (BCFM, DAB, DRM) la caja se ve siempre, aunque aún
+        // no llegue audio (sin señal, o el decodificador no ha enganchado): así se ve la barra L/R
         const aplica = NATIVO
-            ? (Date.now() - E.ultimo < 1500 && (modo === 'bcfm' || modo === 'wfm' || modo === 'dab'))
+            ? (modo === 'bcfm' || modo === 'dab' || modo === 'drm' || (modo === 'wfm' && vivo))
             : (E.canales === 2 && (modo === 'wfm' || modo === 'dab'));
         if (!montarCaja()) return;
         if (!aplica) { caja.style.display = 'none'; return; }
         caja.style.display = '';
-        const vivo = Date.now() - E.ultimo < 1500;
+        if (NATIVO && !vivo) {
+            marca.classList.remove('on', 'forzado');
+            marca.textContent = 'SIN AUDIO';
+            marca.title = 'Aún no llega audio: sin señal, o el decodificador no ha enganchado. '
+                + (E.forzarMono ? 'Está elegido MONO; pulsa para volver a estéreo.' : 'Pulsa para escuchar en mono.');
+            return;
+        }
         const est = vivo && E.diferencia > 0.02;
         marca.classList.toggle('on', est && !E.forzarMono);
         marca.classList.toggle('forzado', !!E.forzarMono);
